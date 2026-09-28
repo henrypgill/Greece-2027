@@ -2,18 +2,9 @@
 
 A [Next.js](https://nextjs.org) app, deployed on [Vercel](https://vercel.com). Built with [Material UI](https://mui.com) and designed for phones only (max width 430px).
 
-## Getting started
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). Start editing at `src/app/page.tsx`.
-
 ## Config
 
-There is a single `.env` file, committed to git and used for both local and production. It only holds public values, such as the Mapbox public access token (`pk.`) used by the Route page. Never put secret keys (`sk.`) in it.
+The Route page uses [Mapbox](https://www.mapbox.com) and reads its public access token (`pk.`) from `NEXT_PUBLIC_MAPBOX_TOKEN`. The token lives in the Vercel project's environment variables (Project Settings → Environment Variables), not in git. Changing it needs a redeploy, since the value is baked in at build time.
 
 ## Scripts
 
