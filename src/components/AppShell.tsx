@@ -103,7 +103,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flex: 1, overflowY: "auto" }}>
+      <Box
+        component="main"
+        sx={{ position: "relative", flex: 1, overflowY: "auto" }}
+      >
         {children}
       </Box>
     </Box>
