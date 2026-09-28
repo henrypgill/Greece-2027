@@ -1,6 +1,6 @@
 # Greece 2027
 
-A [Next.js](https://nextjs.org) app, deployed on [Vercel](https://vercel.com).
+A [Next.js](https://nextjs.org) app, deployed on [Vercel](https://vercel.com). Built with [Material UI](https://mui.com) and designed for phones only (max width 430px).
 
 ## Getting started
 
@@ -20,4 +20,4 @@ Open [http://localhost:3000](http://localhost:3000). Start editing at `src/app/p
 
 ## Deploying
 
-Import this repo at [vercel.com/new](https://vercel.com/new). Vercel detects Next.js automatically, so no extra configuration is needed. Every push to `main` deploys to production, and every other branch gets a preview URL.
+Every push to `main` deploys to production on Vercel, and every other branch gets a preview URL. The Vercel project's Framework Preset must be **Next.js** (Project Settings → Build & Development).
