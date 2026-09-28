@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import "mapbox-gl/dist/mapbox-gl.css";
-
-// Mykonos town (Chora), Greece, as [longitude, latitude].
-const MYKONOS_TOWN: [number, number] = [25.3289, 37.4467];
-const INITIAL_ZOOM = 15;
+import { ROUTE_STOPS } from "@/data/route-stops";
 
 export default function RouteMap() {
   const router = useRouter();
@@ -35,11 +32,23 @@ export default function RouteMap() {
         const { default: mapboxgl } = await import("mapbox-gl");
         if (cancelled || !containerRef.current) return;
         mapboxgl.accessToken = token;
+
+        // Start zoomed to fit every stop on the route.
+        const bounds = new mapboxgl.LngLatBounds();
+        ROUTE_STOPS.forEach((stop) => bounds.extend(stop.coordinates));
+
         map = new mapboxgl.Map({
           container: containerRef.current,
           style: "mapbox://styles/mapbox/streets-v12",
-          center: MYKONOS_TOWN,
-          zoom: INITIAL_ZOOM,
+          bounds,
+          fitBoundsOptions: { padding: 60 },
+        });
+
+        ROUTE_STOPS.forEach((stop) => {
+          new mapboxgl.Marker()
+            .setLngLat(stop.coordinates)
+            .setPopup(new mapboxgl.Popup({ offset: 24 }).setText(stop.name))
+            .addTo(map!);
         });
       } catch {
         if (!cancelled) setFailed(true);
