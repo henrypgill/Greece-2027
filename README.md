@@ -11,12 +11,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Start editing at `src/app/page.tsx`.
 
-## Environment variables
+## Config
 
-The Route page uses [Mapbox](https://www.mapbox.com). Set your Mapbox **public** access token (starts with `pk.`):
-
-- Locally: add `NEXT_PUBLIC_MAPBOX_TOKEN=pk...` to `.env.local`
-- On Vercel: add `NEXT_PUBLIC_MAPBOX_TOKEN` in Project Settings → Environment Variables, then redeploy (the value is baked in at build time)
+There is a single `.env` file, committed to git and used for both local and production. It only holds public values, such as the Mapbox public access token (`pk.`) used by the Route page. Never put secret keys (`sk.`) in it.
 
 ## Scripts
 
