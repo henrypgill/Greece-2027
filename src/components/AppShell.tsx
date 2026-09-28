@@ -40,6 +40,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       : (NAV_ITEMS.find((item) => item.href === pathname)?.label ??
         "Greece 2027");
 
+  // The login page is shown on its own, without the top bar and menu.
+  if (pathname === "/login") return <>{children}</>;
+
   return (
     <Box
       ref={setShell}
