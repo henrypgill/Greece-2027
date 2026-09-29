@@ -67,6 +67,15 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         cost numeric(10, 2) NOT NULL
       )
     `;
+    // Costs for the trip as a whole (flights, charter…), not any one stop.
+    await sql`
+      CREATE TABLE IF NOT EXISTS trip_costs (
+        id serial PRIMARY KEY,
+        sort_order integer NOT NULL,
+        item text NOT NULL,
+        cost numeric(10, 2) NOT NULL
+      )
+    `;
   })().catch((error) => {
     schemaReady = undefined; // retry next time rather than caching the failure
     throw error;
