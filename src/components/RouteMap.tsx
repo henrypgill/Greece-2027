@@ -6,10 +6,10 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
-  ITINERARY,
   formatDuration,
   getLegs,
   type GeoLocation,
+  type ItineraryItem,
 } from "@/data/itinerary";
 import theme from "@/theme";
 
@@ -60,7 +60,11 @@ function createArrowImage(): ImageData {
   return ctx.getImageData(0, 0, size, size);
 }
 
-export default function RouteMap() {
+export default function RouteMap({
+  itinerary,
+}: {
+  itinerary: ItineraryItem[];
+}) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -88,7 +92,7 @@ export default function RouteMap() {
 
         // Start zoomed to fit every stop on the itinerary.
         const bounds = new mapboxgl.LngLatBounds();
-        ITINERARY.forEach((item) => bounds.extend(toLngLat(item.location)));
+        itinerary.forEach((item) => bounds.extend(toLngLat(item.location)));
 
         const mapInstance = new mapboxgl.Map({
           container: containerRef.current,
@@ -98,7 +102,7 @@ export default function RouteMap() {
         });
         map = mapInstance;
 
-        ITINERARY.forEach((item, index) => {
+        itinerary.forEach((item, index) => {
           new mapboxgl.Marker({ element: createPinElement(index + 1) })
             .setLngLat(toLngLat(item.location))
             .setPopup(
@@ -119,7 +123,7 @@ export default function RouteMap() {
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: getLegs().map((leg) => ({
+              features: getLegs(itinerary).map((leg) => ({
                 type: "Feature",
                 properties: {
                   from: leg.fromIndex + 1,
@@ -171,7 +175,7 @@ export default function RouteMap() {
       cancelled = true;
       map?.remove();
     };
-  }, [router]);
+  }, [router, itinerary]);
 
   return (
     <>

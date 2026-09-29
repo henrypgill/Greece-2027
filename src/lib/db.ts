@@ -14,8 +14,8 @@ function getClient(): NeonQueryFunction<false, false> {
 }
 
 /**
- * Returns the query function, creating the tables on first use in each server
- * instance. `IF NOT EXISTS` makes this safe to run repeatedly, so there's no
+ * Returns the query function, creating any missing tables on first use in each
+ * server instance. `IF NOT EXISTS` makes this safe to run repeatedly, so there's no
  * separate migration step.
  */
 export async function db(): Promise<NeonQueryFunction<false, false>> {
@@ -33,6 +33,39 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
     await sql`
       CREATE UNIQUE INDEX IF NOT EXISTS attendees_name_key
       ON attendees (lower(first_name), lower(last_name))
+    `;
+
+    // Which one-off data seeds have been applied (see itinerary-db.ts).
+    await sql`
+      CREATE TABLE IF NOT EXISTS seeds (
+        name text PRIMARY KEY,
+        applied_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+    // Shown in sort_order (ties broken by id); gaps are fine.
+    await sql`
+      CREATE TABLE IF NOT EXISTS itinerary_items (
+        id serial PRIMARY KEY,
+        sort_order integer NOT NULL,
+        title text NOT NULL,
+        start_at timestamptz NOT NULL,
+        end_at timestamptz NOT NULL,
+        description text NOT NULL DEFAULT '',
+        lat double precision NOT NULL,
+        lng double precision NOT NULL,
+        google_maps_url text,
+        CHECK (end_at >= start_at)
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS itinerary_costs (
+        id serial PRIMARY KEY,
+        item_id integer NOT NULL
+          REFERENCES itinerary_items (id) ON DELETE CASCADE,
+        sort_order integer NOT NULL DEFAULT 0,
+        item text NOT NULL,
+        cost numeric(10, 2) NOT NULL
+      )
     `;
   })().catch((error) => {
     schemaReady = undefined; // retry next time rather than caching the failure

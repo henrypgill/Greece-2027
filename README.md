@@ -1,6 +1,6 @@
 # Greece 2027
 
-A trip-planning app for a Greek island hopping trip, June 2027. A [Next.js](https://nextjs.org) app (App Router, TypeScript), deployed on [Vercel](https://vercel.com). Built with [Material UI](https://mui.com) v9. This is a hobby project, not production software — practices are deliberately kept simple (see "Deliberate shortcuts" below).
+A trip-planning app for a Greek island-hopping boat trip, July 2027. A [Next.js](https://nextjs.org) app (App Router, TypeScript), deployed on [Vercel](https://vercel.com). Built with [Material UI](https://mui.com) v9. This is a hobby project, not production software — practices are deliberately kept simple (see "Deliberate shortcuts" below).
 
 ## Live site
 
@@ -17,14 +17,21 @@ Phone-only layout, capped at 430px wide (upper bound of common phone widths), ce
 - `/` — Home. Empty (`src/app/page.tsx`).
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
 - `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here.
-- `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
+- `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`, still static code: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
 - `/attendance` — "I'm going" form (first + last name, both required) and the list of everyone who's signed up, in sign-up order (`src/app/attendance/`). Submits via a Server Action (`actions.ts`), which re-checks the session cookie itself since Server Actions can be POSTed to directly. Names are unique case-insensitively, so signing up twice just says you're already on the list. No emails are collected. There's no way to remove a name from the UI yet — do it in the Neon console.
 
 ## Itinerary data
 
-All itinerary data is static and lives in `src/data/itinerary.ts` (`ITINERARY`), which is the single source of truth for both the Itinerary page and the Route map. **Array order is the trip order** and drives the pin numbers and arrows. Each item has: `title`, `start`/`end` (ISO 8601 with offset, e.g. `2027-06-05T14:00:00+03:00`), `description` (markdown), `location` (`{ lat, lng }`, required, where the pin goes), optional `googleMapsUrl`, and `costs` (array of `{ item, cost }`, in EUR).
+The itinerary lives in Neon Postgres, in two tables:
 
-Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`). The route (16–22 July 2027, boat charter from Paros) is real, but many start and all end times are placeholder guesses (marked in the file), costs (itinerary and trip-wide) are empty/zero, and the Liems cove pin on Ios is approximate.
+- `itinerary_items`: `sort_order` (display order; ties broken by `id`, gaps fine — seeded as 10, 20, 30…), `title`, `start_at`/`end_at` (`timestamptz`, `end_at >= start_at`), `description` (markdown), `lat`/`lng` (required, where the map pin goes), `google_maps_url` (nullable).
+- `itinerary_costs`: `item_id` (→ `itinerary_items.id`, cascade delete), `sort_order`, `item`, `cost` (`numeric(10,2)`, EUR).
+
+`getItinerary()` in `src/lib/itinerary-db.ts` loads it (items in order, each with its costs) as the `ItineraryItem[]` shape defined in `src/data/itinerary.ts`, which also holds the helpers (`getLegs`, `groupByDay`, formatting) and has no server-only imports so client components can use it. The Itinerary, Route and Costs pages all load it per request (`connection()`); the Route page passes it to the client-side `RouteMap` as a prop. Pages show an error message if the database can't be reached. **Order is the trip order** and drives the pin numbers and arrows.
+
+Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`).
+
+**Seeding:** the tables were first filled from `src/data/itinerary-seed.ts`. This happens exactly once per database, tracked by the row `itinerary-v1` in the `seeds` table, in a single atomic statement, so concurrent server instances can't double-seed and deleting every item won't bring the seed back. Editing the seed file now has no effect. There's no editing UI yet: change the itinerary in the Neon console's table editor (enter times with an offset, e.g. `2027-07-16 15:00+03`). The seeded data had real route/dates but placeholder times for most stops and all end times, empty costs, and an approximate Liems cove pin (Ios island centre).
 
 ## Password gate
 
@@ -56,7 +63,7 @@ To change any of these: update in Vercel, then trigger a new deployment (env var
 This is explicitly a for-fun project, not one following normal engineering practice. Known, intentional simplifications:
 
 - No local `.env` file / no separate dev vs. prod config — everything reads from the same Vercel-managed env vars, and there's no documented local-dev setup.
-- The only database is Neon Postgres, used just for attendance sign-ups (`src/lib/db.ts`, `@neondatabase/serverless` over HTTP). There's no migration tooling: `db()` runs `CREATE TABLE/INDEX IF NOT EXISTS` on first use in each server instance, so schema changes go there. Everything else is static code. Auth is stateless (signed cookie); rate-limit counters are in-memory and volatile.
+- The only database is Neon Postgres, used for attendance sign-ups and the itinerary (`src/lib/db.ts`, `@neondatabase/serverless` over HTTP). There's no migration tooling: `db()` runs `CREATE TABLE/INDEX IF NOT EXISTS` on first use in each server instance, so new tables go there, but changes to an existing table's columns need a manual `ALTER TABLE` (e.g. in the Neon console). Trip-wide costs (`TRIP_COSTS`) are still static code. Auth is stateless (signed cookie); rate-limit counters are in-memory and volatile.
 - No test suite.
 - No `package-lock.json` committed — install with `npm install` before relying on exact pinned versions.
 - Vercel Authentication (SSO protection) is turned **off** for this project (it was on by default and blocked the login page from working for anyone without a Vercel account).
@@ -64,7 +71,7 @@ This is explicitly a for-fun project, not one following normal engineering pract
 ## Working on this repo
 
 - Framework preset in Vercel must be **Next.js** (it defaulted to "Other" once when the repo only had a README, which silently broke every deploy — worth checking if deploys start failing again for no obvious reason).
-- `npm run build` requires `AUTH_SECRET`/`APP_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places. `DATABASE_URL` isn't needed to build: `/attendance` is rendered per request (`connection()`), never at build time.
+- `npm run build` requires `AUTH_SECRET`/`APP_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places. `DATABASE_URL` isn't needed to build: every page that reads the database is rendered per request (`connection()`), never at build time.
 - `npm run lint` / `npx tsc --noEmit` before pushing. `tsc` needs the Next-generated route types (e.g. `LayoutProps`), so run it after a build.
 - `AGENTS.md` (auto-generated/managed by `next dev`, not hand-written) documents Next.js version-specific behaviour that may differ from a coding agent's training data — read it before making framework-level changes.
 
@@ -72,7 +79,8 @@ This is explicitly a for-fun project, not one following normal engineering pract
 
 - Swim spots / anchorages on the Route map: Navily (the obvious data source) has **no public API** — confirmed by web search, nothing beyond the consumer app/website exists. Leaning towards manually curating a short list of spots (name + coordinates) and adding them as a second marker type alongside the itinerary pins, rather than scraping Navily's site (likely against their ToS) or pulling in a heavier open-data source (OpenSeaMap etc.) for a hobby project.
 - Home page is still an empty placeholder with no design direction agreed yet.
-- Replace the placeholder itinerary data with the real plan.
+- Replace the placeholder itinerary times/costs with the real plan.
+- An in-app editor for the itinerary (currently edited in the Neon console).
 
 ## Scripts
 

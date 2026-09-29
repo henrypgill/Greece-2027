@@ -9,26 +9,37 @@ import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MapIcon from "@mui/icons-material/Map";
 import Markdown from "react-markdown";
-import {
-  ITINERARY,
-  formatDateTime,
-  formatDuration,
-  getLegs,
-} from "@/data/itinerary";
+import { connection } from "next/server";
+import Alert from "@mui/material/Alert";
+import { formatDateTime, formatDuration, getLegs } from "@/data/itinerary";
+import { loadItinerary } from "@/lib/itinerary-db";
 
-export default function ItineraryPage() {
-  const legs = getLegs();
+export default async function ItineraryPage() {
+  await connection(); // read fresh from the database on every request
+  const itinerary = await loadItinerary();
+  if (!itinerary) {
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        The itinerary couldn&apos;t be loaded.
+      </Alert>
+    );
+  }
+  const legs = getLegs(itinerary);
 
   return (
     <Box>
-      {ITINERARY.map((item, index) => {
+      {itinerary.map((item, index) => {
         const number = index + 1;
         const nextLeg = legs[index];
 
         return (
           <Accordion key={index} disableGutters square>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: "center" }}
+              >
                 <Avatar
                   sx={{
                     width: 28,

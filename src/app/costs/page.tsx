@@ -6,8 +6,9 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import { connection } from "next/server";
+import Alert from "@mui/material/Alert";
 import {
-  ITINERARY,
   formatCost,
   formatDay,
   groupByDay,
@@ -16,6 +17,7 @@ import {
   type CostItem,
 } from "@/data/itinerary";
 import { TRIP_COSTS } from "@/data/trip-costs";
+import { loadItinerary } from "@/lib/itinerary-db";
 
 function CostRows({ costs }: { costs: CostItem[] }) {
   return costs.map((cost, i) => (
@@ -39,13 +41,22 @@ function SubtotalRow({ label, amount }: { label: string; amount: number }) {
   );
 }
 
-export default function CostsPage() {
+export default async function CostsPage() {
+  await connection(); // read fresh from the database on every request
+  const itinerary = await loadItinerary();
+  if (!itinerary) {
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        The itinerary costs couldn&apos;t be loaded.
+      </Alert>
+    );
+  }
   const overallTotal = sumCosts(TRIP_COSTS);
-  const itineraryTotal = ITINERARY.reduce(
+  const itineraryTotal = itinerary.reduce(
     (sum, item) => sum + itemTotalCost(item),
     0,
   );
-  const days = groupByDay();
+  const days = groupByDay(itinerary);
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
