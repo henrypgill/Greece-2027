@@ -39,60 +39,80 @@ export const CURRENCY = "EUR";
 /** Dates/times are shown in Greek local time, whatever the viewer's device says. */
 export const TRIP_TIME_ZONE = "Europe/Athens";
 
-// PLACEHOLDER DATA: the islands from the original route, with made-up dates,
-// times and costs. Replace with the real plan.
+// Times marked "placeholder" (and all end times) are guesses to be firmed up.
 export const ITINERARY: ItineraryItem[] = [
   {
-    title: "Paros",
-    start: "2027-06-05T14:00:00+03:00",
-    end: "2027-06-08T10:00:00+03:00",
-    description: "Stay in **Parikia**, the main port town.",
+    title: "Paros: pick up the boat",
+    start: "2027-07-16T15:00:00+03:00",
+    end: "2027-07-16T17:00:00+03:00", // placeholder
+    description: "Collect the charter boat.",
     location: { lat: 37.0853, lng: 25.1489 },
-    costs: [{ item: "Accommodation, 3 nights", cost: 300 }],
+    costs: [],
   },
   {
-    title: "Sifnos",
-    start: "2027-06-08T13:00:00+03:00",
-    end: "2027-06-11T10:00:00+03:00",
-    description: "Based in **Apollonia**.",
-    location: { lat: 36.9736, lng: 24.7194 },
-    costs: [
-      { item: "Ferry Paros → Sifnos", cost: 40 },
-      { item: "Accommodation, 3 nights", cost: 280 },
-    ],
+    title: "Antiparos: at anchor",
+    start: "2027-07-16T20:00:00+03:00",
+    end: "2027-07-17T08:00:00+03:00", // placeholder
+    description: "Overnight at anchor off Antiparos.",
+    location: { lat: 37.0405, lng: 25.084 },
+    costs: [],
   },
   {
-    title: "Mykonos",
-    start: "2027-06-11T14:30:00+03:00",
-    end: "2027-06-14T10:00:00+03:00",
-    description: "Mykonos town (Chora).",
-    location: { lat: 37.4467, lng: 25.3289 },
-    costs: [
-      { item: "Ferry Sifnos → Mykonos", cost: 60 },
-      { item: "Accommodation, 3 nights", cost: 450 },
-    ],
+    title: "Ios: Liems cove swim stop",
+    start: "2027-07-17T11:00:00+03:00",
+    end: "2027-07-17T14:00:00+03:00", // placeholder
+    description: "Swim stop.",
+    // TODO: exact location of Liems cove unknown; pin is Ios island centre.
+    location: { lat: 36.7167, lng: 25.3364 },
+    costs: [],
   },
   {
-    title: "Santorini",
-    start: "2027-06-14T13:00:00+03:00",
-    end: "2027-06-17T10:00:00+03:00",
-    description: "Stay in **Fira**.",
+    title: "Ios: marina",
+    start: "2027-07-17T16:00:00+03:00",
+    end: "2027-07-18T09:00:00+03:00", // placeholder
+    description: "Docked in Ios marina for the night.",
+    location: { lat: 36.7225, lng: 25.276 },
+    costs: [],
+  },
+  {
+    title: "Santorini: Oia",
+    start: "2027-07-18T12:00:00+03:00", // placeholder
+    end: "2027-07-19T09:00:00+03:00", // placeholder
+    description: "",
+    location: { lat: 36.4618, lng: 25.3753 },
+    costs: [],
+  },
+  {
+    title: "Santorini: Fira",
+    start: "2027-07-19T11:00:00+03:00", // placeholder
+    end: "2027-07-20T09:00:00+03:00", // placeholder
+    description: "",
     location: { lat: 36.4166, lng: 25.4319 },
-    costs: [
-      { item: "Ferry Mykonos → Santorini", cost: 70 },
-      { item: "Accommodation, 3 nights", cost: 500 },
-    ],
+    costs: [],
   },
   {
     title: "Naxos",
-    start: "2027-06-17T12:00:00+03:00",
-    end: "2027-06-20T10:00:00+03:00",
-    description: "Naxos town (Chora).",
+    start: "2027-07-20T16:00:00+03:00", // placeholder
+    end: "2027-07-21T09:00:00+03:00", // placeholder
+    description: "",
     location: { lat: 37.1036, lng: 25.3763 },
-    costs: [
-      { item: "Ferry Santorini → Naxos", cost: 45 },
-      { item: "Accommodation, 3 nights", cost: 280 },
-    ],
+    costs: [],
+  },
+  {
+    title: "Mykonos",
+    start: "2027-07-21T13:00:00+03:00", // placeholder
+    end: "2027-07-22T09:00:00+03:00", // placeholder
+    description: "",
+    location: { lat: 37.4467, lng: 25.3289 },
+    costs: [],
+  },
+  {
+    title: "Paros: drop off the boat",
+    start: "2027-07-22T13:00:00+03:00", // placeholder
+    end: "2027-07-22T15:00:00+03:00", // placeholder
+    description: "Return the charter boat.",
+    location: { lat: 37.0853, lng: 25.1489 },
+    costs: [],
   },
 ];
 

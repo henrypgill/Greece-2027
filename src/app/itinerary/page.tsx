@@ -56,15 +56,17 @@ export default function ItineraryPage() {
                   {formatDateTime(item.start)} → {formatDateTime(item.end)}
                 </Typography>
 
-                <Box
-                  sx={{
-                    typography: "body2",
-                    "& > :first-of-type": { mt: 0 },
-                    "& > :last-child": { mb: 0 },
-                  }}
-                >
-                  <Markdown>{item.description}</Markdown>
-                </Box>
+                {item.description && (
+                  <Box
+                    sx={{
+                      typography: "body2",
+                      "& > :first-of-type": { mt: 0 },
+                      "& > :last-child": { mb: 0 },
+                    }}
+                  >
+                    <Markdown>{item.description}</Markdown>
+                  </Box>
+                )}
 
                 {item.costs.length > 0 && (
                   <Table size="small">

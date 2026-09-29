@@ -22,7 +22,7 @@ Phone-only layout, capped at 430px wide (upper bound of common phone widths), ce
 
 All itinerary data is static and lives in `src/data/itinerary.ts` (`ITINERARY`), which is the single source of truth for both the Itinerary page and the Route map. **Array order is the trip order** and drives the pin numbers and arrows. Each item has: `title`, `start`/`end` (ISO 8601 with offset, e.g. `2027-06-05T14:00:00+03:00`), `description` (markdown), `location` (`{ lat, lng }`, required, where the pin goes), optional `googleMapsUrl`, and `costs` (array of `{ item, cost }`, in EUR).
 
-Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`). **The current contents are placeholders** (the original five islands with made-up dates and costs).
+Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`). The route (16–22 July 2027, boat charter from Paros) is real, but many start and all end times are placeholder guesses (marked in the file), costs are empty, and the Liems cove pin on Ios is approximate.
 
 ## Password gate
 
