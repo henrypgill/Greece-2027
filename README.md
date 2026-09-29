@@ -12,12 +12,13 @@ A trip-planning app for a Greek island hopping trip, June 2027. A [Next.js](http
 
 ## Pages
 
-Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the four routes below (`src/components/AppShell.tsx`). The login page (`/login`) is the only page with no shell around it.
+Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the five routes below (`src/components/AppShell.tsx`). The login page (`/login`) is the only page with no shell around it.
 
 - `/` — Home. Empty (`src/app/page.tsx`).
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
 - `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here.
 - `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
+- `/attendance` — "I'm going" form (first + last name, both required) and the list of everyone who's signed up, in sign-up order (`src/app/attendance/`). Submits via a Server Action (`actions.ts`), which re-checks the session cookie itself since Server Actions can be POSTed to directly. Names are unique case-insensitively, so signing up twice just says you're already on the list. No emails are collected. There's no way to remove a name from the UI yet — do it in the Neon console.
 
 ## Itinerary data
 
@@ -43,6 +44,7 @@ All set in the Vercel project (Project Settings → Environment Variables), **no
 |---|---|---|
 | `APP_PASSWORD` | The site password, checked in `/api/login` | production, preview |
 | `AUTH_SECRET` | Random secret used to sign session tokens. Changing it invalidates all existing sessions | production, preview |
+| `DATABASE_URL` | Neon Postgres connection string, set automatically by the Neon–Vercel integration (`src/lib/db.ts` also accepts `POSTGRES_URL`) | set by integration |
 | `MAPBOX_TOKEN` | Mapbox **public** access token (`pk.…`), served only to authenticated sessions via `/api/map-config` | production, preview, development |
 
 There's an older unused `NEXT_PUBLIC_MAPBOX_TOKEN` variable still in the Vercel project from an earlier version of the map (before the password gate existed, when the token was build-time-inlined and public). It's safe to delete; nothing reads it now. If it's still there, that old token value was exposed in public page source for a while and ideally should be rotated/restricted in the Mapbox dashboard.
@@ -54,7 +56,7 @@ To change any of these: update in Vercel, then trigger a new deployment (env var
 This is explicitly a for-fun project, not one following normal engineering practice. Known, intentional simplifications:
 
 - No local `.env` file / no separate dev vs. prod config — everything reads from the same Vercel-managed env vars, and there's no documented local-dev setup.
-- No database. Auth is stateless (signed cookie); rate-limit counters are in-memory and volatile.
+- The only database is Neon Postgres, used just for attendance sign-ups (`src/lib/db.ts`, `@neondatabase/serverless` over HTTP). There's no migration tooling: `db()` runs `CREATE TABLE/INDEX IF NOT EXISTS` on first use in each server instance, so schema changes go there. Everything else is static code. Auth is stateless (signed cookie); rate-limit counters are in-memory and volatile.
 - No test suite.
 - No `package-lock.json` committed — install with `npm install` before relying on exact pinned versions.
 - Vercel Authentication (SSO protection) is turned **off** for this project (it was on by default and blocked the login page from working for anyone without a Vercel account).
@@ -62,7 +64,7 @@ This is explicitly a for-fun project, not one following normal engineering pract
 ## Working on this repo
 
 - Framework preset in Vercel must be **Next.js** (it defaulted to "Other" once when the repo only had a README, which silently broke every deploy — worth checking if deploys start failing again for no obvious reason).
-- `npm run build` requires `AUTH_SECRET`/`APP_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places.
+- `npm run build` requires `AUTH_SECRET`/`APP_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places. `DATABASE_URL` isn't needed to build: `/attendance` is rendered per request (`connection()`), never at build time.
 - `npm run lint` / `npx tsc --noEmit` before pushing. `tsc` needs the Next-generated route types (e.g. `LayoutProps`), so run it after a build.
 - `AGENTS.md` (auto-generated/managed by `next dev`, not hand-written) documents Next.js version-specific behaviour that may differ from a coding agent's training data — read it before making framework-level changes.
 
