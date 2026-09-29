@@ -5,21 +5,15 @@ import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MapIcon from "@mui/icons-material/Map";
 import Markdown from "react-markdown";
 import {
   ITINERARY,
-  formatCost,
   formatDateTime,
   formatDuration,
   getLegs,
-  itemTotalCost,
 } from "@/data/itinerary";
 
 export default function ItineraryPage() {
@@ -30,7 +24,6 @@ export default function ItineraryPage() {
       {ITINERARY.map((item, index) => {
         const number = index + 1;
         const nextLeg = legs[index];
-        const total = itemTotalCost(item);
 
         return (
           <Accordion key={index} disableGutters square>
@@ -66,32 +59,6 @@ export default function ItineraryPage() {
                   >
                     <Markdown>{item.description}</Markdown>
                   </Box>
-                )}
-
-                {item.costs.length > 0 && (
-                  <Table size="small">
-                    <TableBody>
-                      {item.costs.map((cost, i) => (
-                        <TableRow key={i}>
-                          <TableCell sx={{ pl: 0 }}>{cost.item}</TableCell>
-                          <TableCell align="right" sx={{ pr: 0 }}>
-                            {formatCost(cost.cost)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow>
-                        <TableCell sx={{ pl: 0, fontWeight: 500, border: 0 }}>
-                          Total
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{ pr: 0, fontWeight: 500, border: 0 }}
-                        >
-                          {formatCost(total)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
                 )}
 
                 {item.googleMapsUrl && (

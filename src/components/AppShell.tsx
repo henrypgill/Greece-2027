@@ -17,6 +17,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import MenuIcon from "@mui/icons-material/Menu";
 import RouteIcon from "@mui/icons-material/Route";
 import EventNoteIcon from "@mui/icons-material/EventNote";
+import EuroIcon from "@mui/icons-material/Euro";
 
 // Upper bound of common single-screen phone widths (e.g. iPhone Pro Max).
 const MAX_WIDTH = 430;
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { label: "Home", href: "/", icon: <HomeIcon /> },
   { label: "Route", href: "/route", icon: <RouteIcon /> },
   { label: "Itinerary", href: "/itinerary", icon: <EventNoteIcon /> },
+  { label: "Costs", href: "/costs", icon: <EuroIcon /> },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

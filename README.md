@@ -12,17 +12,18 @@ A trip-planning app for a Greek island hopping trip, June 2027. A [Next.js](http
 
 ## Pages
 
-Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the three routes below (`src/components/AppShell.tsx`). The login page (`/login`) is the only page with no shell around it.
+Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the four routes below (`src/components/AppShell.tsx`). The login page (`/login`) is the only page with no shell around it.
 
 - `/` — Home. Empty (`src/app/page.tsx`).
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
-- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), cost table with total, optional "Open in Google Maps" button, and the travel time to the next item.
+- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here.
+- `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
 
 ## Itinerary data
 
 All itinerary data is static and lives in `src/data/itinerary.ts` (`ITINERARY`), which is the single source of truth for both the Itinerary page and the Route map. **Array order is the trip order** and drives the pin numbers and arrows. Each item has: `title`, `start`/`end` (ISO 8601 with offset, e.g. `2027-06-05T14:00:00+03:00`), `description` (markdown), `location` (`{ lat, lng }`, required, where the pin goes), optional `googleMapsUrl`, and `costs` (array of `{ item, cost }`, in EUR).
 
-Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`). The route (16–22 July 2027, boat charter from Paros) is real, but many start and all end times are placeholder guesses (marked in the file), costs are empty, and the Liems cove pin on Ios is approximate.
+Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`). The route (16–22 July 2027, boat charter from Paros) is real, but many start and all end times are placeholder guesses (marked in the file), costs (itinerary and trip-wide) are empty/zero, and the Liems cove pin on Ios is approximate.
 
 ## Password gate
 

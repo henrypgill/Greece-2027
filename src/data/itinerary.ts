@@ -140,8 +140,41 @@ export function getLegs(items: ItineraryItem[] = ITINERARY): Leg[] {
   });
 }
 
+export function sumCosts(costs: CostItem[]): number {
+  return costs.reduce((sum, c) => sum + c.cost, 0);
+}
+
 export function itemTotalCost(item: ItineraryItem): number {
-  return item.costs.reduce((sum, c) => sum + c.cost, 0);
+  return sumCosts(item.costs);
+}
+
+export type ItineraryDay = {
+  /** YYYY-MM-DD in Greek time. */
+  date: string;
+  /** The items starting on this day, with their itinerary numbers. */
+  items: { number: number; item: ItineraryItem }[];
+};
+
+const dayKeyFormat = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TRIP_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Groups items by the (Greek) day they start on, in itinerary order. */
+export function groupByDay(items: ItineraryItem[] = ITINERARY): ItineraryDay[] {
+  const days: ItineraryDay[] = [];
+  items.forEach((item, index) => {
+    const date = dayKeyFormat.format(new Date(item.start));
+    let day = days.find((d) => d.date === date);
+    if (!day) {
+      day = { date, items: [] };
+      days.push(day);
+    }
+    day.items.push({ number: index + 1, item });
+  });
+  return days;
 }
 
 /** e.g. "3h 30m", "1d 2h", "45m". */
@@ -166,6 +199,19 @@ const dateTimeFormat = new Intl.DateTimeFormat("en-GB", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+const dayFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TRIP_TIME_ZONE,
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
+/** e.g. "Fri 16 Jul", for a YYYY-MM-DD day key. */
+export function formatDay(date: string): string {
+  // Noon UTC is the same calendar day in Greece.
+  return dayFormat.format(new Date(`${date}T12:00:00Z`));
+}
 
 /** e.g. "Sat 5 Jun, 14:00", in Greek time. */
 export function formatDateTime(iso: string): string {
