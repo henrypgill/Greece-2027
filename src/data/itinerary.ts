@@ -92,11 +92,16 @@ const dayKeyFormat = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+/** The Greek-time calendar day of an ISO date-time, as "YYYY-MM-DD". */
+export function greekDayKey(iso: string): string {
+  return dayKeyFormat.format(new Date(iso));
+}
+
 /** Groups items by the (Greek) day they start on, in itinerary order. */
 export function groupByDay(items: ItineraryItem[]): ItineraryDay[] {
   const days: ItineraryDay[] = [];
   items.forEach((item, index) => {
-    const date = dayKeyFormat.format(new Date(item.start));
+    const date = greekDayKey(item.start);
     let day = days.find((d) => d.date === date);
     if (!day) {
       day = { date, items: [] };

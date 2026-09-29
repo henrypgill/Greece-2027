@@ -14,7 +14,7 @@ A trip-planning app for a Greek island-hopping boat trip, July 2027. A [Next.js]
 
 Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the five routes below plus "Log out" (`src/components/AppShell.tsx`), which is also how to switch between the user and admin password. The login page (`/login`) is the only page with no shell around it.
 
-- `/` — Home. Empty (`src/app/page.tsx`).
+- `/` — Home (`src/app/page.tsx`): the trip's first and last day and its length in days, then a month calendar (`src/components/TripCalendar.tsx`, a plain grid, weeks starting Monday, no date library) with the trip days highlighted. The dates come from the itinerary: the earliest stop start to the latest stop end, as Greek-time calendar days (`greekDayKey()`), so they follow edits to the itinerary.
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
 - `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx` loads the data and the role; `ItineraryList.tsx` renders it). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here. **Admins also get:**
   - A pencil button on each expanded stop, opening a popup (`StopDialog.tsx`) with every field plus cost lines; Save saves, Delete deletes. An "Add stop" button at the top opens the same popup empty (new stops go at the end). Times are entered as Greek local time (`datetime-local`) and converted in SQL (`::timestamp AT TIME ZONE 'Europe/Athens'`). Saving replaces the stop's cost lines in the same statement.
@@ -92,7 +92,6 @@ This is explicitly a for-fun project, not one following normal engineering pract
 ## Possible next steps (discussed, not started)
 
 - Swim spots / anchorages on the Route map: Navily (the obvious data source) has **no public API** — confirmed by web search, nothing beyond the consumer app/website exists. Leaning towards manually curating a short list of spots (name + coordinates) and adding them as a second marker type alongside the itinerary pins, rather than scraping Navily's site (likely against their ToS) or pulling in a heavier open-data source (OpenSeaMap etc.) for a hobby project.
-- Home page is still an empty placeholder with no design direction agreed yet.
 - Replace the placeholder itinerary times/costs with the real plan.
 
 ## Scripts
