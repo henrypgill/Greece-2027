@@ -3,6 +3,12 @@ import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 // Neon Postgres, connected to the Vercel project via the Neon integration,
 // which sets DATABASE_URL (some setups name it POSTGRES_URL instead).
 
+/** The home page's starting description (admins edit it there). */
+const TRIP_DESCRIPTION =
+  "A week sailing the Cyclades in July 2027. We pick up the boat on Paros " +
+  "and island-hop via Antiparos, Ios, Santorini, Naxos and Mykonos, with " +
+  "swim stops in quiet coves along the way, before heading back to Paros.";
+
 let client: NeonQueryFunction<false, false> | undefined;
 let schemaReady: Promise<void> | undefined;
 
@@ -102,8 +108,21 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
     await sql`
       INSERT INTO settings (key, value) VALUES
         ('people_count', '10'),
-        ('trip_description', 'A Greek island-hopping boat trip, July 2027.')
+        ('trip_description', ${TRIP_DESCRIPTION})
       ON CONFLICT (key) DO NOTHING
+    `;
+    // One-off: swap the first placeholder description for the real one,
+    // unless an admin has already changed it.
+    await sql`
+      WITH claimed AS (
+        INSERT INTO seeds (name) VALUES ('trip-description-v2')
+        ON CONFLICT DO NOTHING
+        RETURNING name
+      )
+      UPDATE settings SET value = ${TRIP_DESCRIPTION}
+      WHERE key = 'trip_description'
+        AND value = 'A Greek island-hopping boat trip, July 2027.'
+        AND EXISTS (SELECT 1 FROM claimed)
     `;
   })().catch((error) => {
     schemaReady = undefined; // retry next time rather than caching the failure
