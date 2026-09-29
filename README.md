@@ -7,19 +7,21 @@ A trip-planning app for a Greek island-hopping boat trip, July 2027. A [Next.js]
 - **URL:** https://greece-2027.vercel.app
 - **Vercel project:** `greece-2027`, team `henrys-projects-7405eafb` (team ID `team_sOOQA1KcoJcZPenMHoEsBZHd`)
 - **GitHub repo:** `henrypgill/Greece-2027`, default branch `main`
-- The whole site is password-protected (see "Password gate" below). **Current password: `borradaile`.**
+- The whole site is password-protected, with a user password and an admin password (see "Password gate" below). The passwords are only in the Vercel env vars, deliberately not written here, because this repo is public.
 - Every push to `main` auto-deploys to production via the Vercel–GitHub integration. There is no staging environment or CI — pushing to `main` is the only deploy path.
 
 ## Pages
 
-Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the five routes below (`src/components/AppShell.tsx`). The login page (`/login`) is the only page with no shell around it.
+Phone-only layout, capped at 430px wide (upper bound of common phone widths), centred with a grey background on anything wider. A burger menu in the top `AppBar` opens a `Drawer` with the five routes below plus "Log out" (`src/components/AppShell.tsx`), which is also how to switch between the user and admin password. The login page (`/login`) is the only page with no shell around it.
 
 - `/` — Home. Empty (`src/app/page.tsx`).
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
-- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here. An "Edit itinerary" button and a per-stop "Edit this stop" link lead to the editor.
-- `/itinerary/edit` — In-app itinerary editor (`src/app/itinerary/edit/`). The list page reorders stops (up/down arrows: swap with the neighbour, then renumber every `sort_order` 10, 20, 30…) and links to `/itinerary/edit/new` and `/itinerary/edit/[id]`, a form (`StopForm.tsx`) for all fields plus cost lines, with delete on existing stops. Times are entered as Greek local time (`datetime-local`) and converted in SQL (`::timestamp AT TIME ZONE 'Europe/Athens'`). Saving an existing stop replaces its cost lines in the same statement. All mutations are Server Actions (`actions.ts`) that check the session via `src/lib/session.ts`, validate server-side, and `revalidatePath('/', 'layout')`. Not in the nav; the AppShell treats sub-paths as part of their parent nav item.
+- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx` loads the data and the role; `ItineraryList.tsx` renders it). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here. **Admins also get:**
+  - A pencil button on each expanded stop, opening a popup (`StopDialog.tsx`) with every field plus cost lines; Save saves, Delete deletes. An "Add stop" button at the top opens the same popup empty (new stops go at the end). Times are entered as Greek local time (`datetime-local`) and converted in SQL (`::timestamp AT TIME ZONE 'Europe/Athens'`). Saving replaces the stop's cost lines in the same statement.
+  - A drag handle on each row (`@dnd-kit/sortable`, vertical only). Dropping saves the new order straight away (`reorderStops`: renumbers every `sort_order` 10, 20, 30… in one statement, and refuses if the list of ids no longer matches the database, e.g. someone else added a stop meanwhile). The list moves immediately and snaps back with an error message if saving fails.
+  - All of these are Server Actions (`src/app/itinerary/actions.ts`) that check for an admin session themselves, validate server-side, and `revalidatePath('/', 'layout')`.
 - `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`, still static code: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
-- `/attendance` — "I'm going" form (first + last name, both required) and the list of everyone who's signed up, in sign-up order (`src/app/attendance/`). Submits via a Server Action (`actions.ts`), which re-checks the session cookie itself since Server Actions can be POSTed to directly. Names are unique case-insensitively, so signing up twice just says you're already on the list. No emails are collected. There's no way to remove a name from the UI yet — do it in the Neon console.
+- `/attendance` — "I'm going" form (first + last name, both required) and the list of everyone who's signed up, in sign-up order (`src/app/attendance/`). Submits via a Server Action (`actions.ts`), which re-checks the session cookie itself since Server Actions can be POSTed to directly. Names are unique case-insensitively, so signing up twice just says you're already on the list. No emails are collected. Admins get edit (pencil → popup) and remove buttons on each name (`AttendeeList.tsx`, `updateAttendee`/`removeAttendee` in `actions.ts`, which check for an admin session themselves). Renaming someone to a name already on the list is refused.
 
 ## Itinerary data
 
@@ -32,14 +34,20 @@ The itinerary lives in Neon Postgres, in two tables:
 
 Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`).
 
-**Seeding:** the tables were first filled from `src/data/itinerary-seed.ts`. This happens exactly once per database, tracked by the row `itinerary-v1` in the `seeds` table, in a single atomic statement, so concurrent server instances can't double-seed and deleting every item won't bring the seed back. Editing the seed file now has no effect. Edit the itinerary in the app at `/itinerary/edit` (or directly in the Neon console, entering times with an offset, e.g. `2027-07-16 15:00+03`). The seeded data had real route/dates but placeholder times for most stops and all end times, empty costs, and an approximate Liems cove pin (Ios island centre).
+**Seeding:** the tables were first filled from `src/data/itinerary-seed.ts`. This happens exactly once per database, tracked by the row `itinerary-v1` in the `seeds` table, in a single atomic statement, so concurrent server instances can't double-seed and deleting every item won't bring the seed back. Editing the seed file now has no effect. Edit the itinerary in the app as an admin on `/itinerary` (or directly in the Neon console, entering times with an offset, e.g. `2027-07-16 15:00+03`). The seeded data had real route/dates but placeholder times for most stops and all end times, empty costs, and an approximate Liems cove pin (Ios island centre).
 
 ## Password gate
 
-The whole site requires a password, added because the Mapbox token and trip details shouldn't be public. Full design rationale is in the conversation history, not written down elsewhere — summary:
+The whole site requires a password, added because the Mapbox token and trip details shouldn't be public. There are two passwords, giving two roles:
 
-- `src/proxy.ts` (Next.js Proxy, formerly "Middleware") blocks every request without a valid session cookie, except `/login` and `POST /api/login`.
-- `POST /api/login` (`src/app/api/login/route.ts`) checks the password against `APP_PASSWORD` and, if correct, sets an httpOnly cookie (`session`) containing a signed token (`src/lib/auth.ts`, HMAC-SHA256 via Web Crypto, secret is `AUTH_SECRET`). Token format: `<expiry-ms>.<signature>`. Valid for 2 hours (`SESSION_TTL_SECONDS`).
+- **User** (`USER_PASSWORD`): the site as a visitor, plus signing up on the attendance page.
+- **Admin** (`ADMIN_PASSWORD`): everything a user can do, plus editing/reordering/adding/deleting itinerary stops and editing/removing attendees.
+
+How it works:
+
+- `src/proxy.ts` (Next.js Proxy, formerly "Middleware") blocks every request without a valid session cookie (either role), except `/login`, `POST /api/login` and `POST /api/logout`.
+- `POST /api/login` (`src/app/api/login/route.ts`) checks the password against `ADMIN_PASSWORD` and `USER_PASSWORD` and, if one matches, sets an httpOnly cookie (`session`) containing a signed token (`src/lib/auth.ts`, HMAC-SHA256 via Web Crypto, secret is `AUTH_SECRET`). Token format: `<role>.<expiry-ms>.<signature of role.expiry>`, so the role can't be changed without breaking the signature. Valid for 2 hours (`SESSION_TTL_SECONDS`). `POST /api/logout` deletes the cookie.
+- Admin-only things are enforced on the server, in each Server Action (`isAdminSession()` in `src/lib/session.ts`); the pages only use the role to decide whether to show the admin controls.
 - Failed logins are rate-limited per client IP (`src/lib/rate-limit.ts`): 5 wrong attempts blocks that IP for 2 hours. **Limiter state is an in-memory `Map`**, so it's per server instance and resets on redeploy or cold start — acceptable for deterring casual brute-forcing of a hobby app's password, not a hard guarantee.
 - The Mapbox token is never sent to the browser as part of the JS bundle. `RouteMap.tsx` fetches it at runtime from `GET /api/map-config` (`src/app/api/map-config/route.ts`), which only returns it to a request carrying a valid session cookie.
 - Client IP is read from `x-forwarded-for`, which Vercel sets itself (not client-controlled), so it can't be spoofed on this platform.
@@ -50,7 +58,8 @@ All set in the Vercel project (Project Settings → Environment Variables), **no
 
 | Variable | Purpose | Targets set |
 |---|---|---|
-| `APP_PASSWORD` | The site password, checked in `/api/login` | production, preview |
+| `USER_PASSWORD` | The user password, checked in `/api/login` | production, preview |
+| `ADMIN_PASSWORD` | The admin password, checked in `/api/login` | production, preview |
 | `AUTH_SECRET` | Random secret used to sign session tokens. Changing it invalidates all existing sessions | production, preview |
 | `DATABASE_URL` | Neon Postgres connection string, set automatically by the Neon–Vercel integration (`src/lib/db.ts` also accepts `POSTGRES_URL`) | set by integration |
 | `MAPBOX_TOKEN` | Mapbox **public** access token (`pk.…`), served only to authenticated sessions via `/api/map-config` | production, preview, development |
@@ -71,10 +80,11 @@ This is explicitly a for-fun project, not one following normal engineering pract
 
 ## Working on this repo
 
+- **Commit and push straight to `main`. Don't create branches or pull requests.** This is a hobby project, not production software: downtime or a briefly broken deploy doesn't matter, and every push to `main` redeploys. If a change needs env vars set in Vercel, say so, but still push to `main`.
 - Framework preset in Vercel must be **Next.js** (it defaulted to "Other" once when the repo only had a README, which silently broke every deploy — worth checking if deploys start failing again for no obvious reason).
-- `npm run build` requires `AUTH_SECRET`/`APP_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places. `DATABASE_URL` isn't needed to build: every page that reads the database is rendered per request (`connection()`), never at build time.
+- `npm run build` requires `AUTH_SECRET`/`USER_PASSWORD`/`ADMIN_PASSWORD`/`MAPBOX_TOKEN` to be set (even dummy values) to build cleanly, since they're read at import time in a couple of places. `DATABASE_URL` isn't needed to build: every page that reads the database is rendered per request (`connection()`), never at build time.
 - `npm run lint` / `npx tsc --noEmit` before pushing. `tsc` needs the Next-generated route types (e.g. `LayoutProps`), so run it after a build.
-- `AGENTS.md` (auto-generated/managed by `next dev`, not hand-written) documents Next.js version-specific behaviour that may differ from a coding agent's training data — read it before making framework-level changes.
+- `AGENTS.md`: the `nextjs-agent-rules` block is auto-generated/managed by `next dev` (not hand-written) and documents Next.js version-specific behaviour that may differ from a coding agent's training data — read it before making framework-level changes. The "Branching" section below that block is hand-written.
 
 ## Possible next steps (discussed, not started)
 
