@@ -18,8 +18,10 @@ import {
 } from "@/data/itinerary";
 import { loadItinerary } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
+import { loadPeopleCount } from "@/lib/settings-db";
 import { loadTripCosts } from "@/lib/trip-costs-db";
 import TripCosts from "./TripCosts";
+import TripTotal from "./TripTotal";
 
 function CostRows({ costs }: { costs: CostItem[] }) {
   return costs.map((cost, i) => (
@@ -45,12 +47,13 @@ function SubtotalRow({ label, amount }: { label: string; amount: number }) {
 
 export default async function CostsPage() {
   await connection(); // read fresh from the database on every request
-  const [itinerary, tripCosts, isAdmin] = await Promise.all([
+  const [itinerary, tripCosts, peopleCount, isAdmin] = await Promise.all([
     loadItinerary(),
     loadTripCosts(),
+    loadPeopleCount(),
     isAdminSession(),
   ]);
-  if (!itinerary || !tripCosts) {
+  if (!itinerary || !tripCosts || peopleCount === undefined) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
         The costs couldn&apos;t be loaded.
@@ -66,14 +69,11 @@ export default async function CostsPage() {
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
-      <Box>
-        <Typography variant="overline" color="text.secondary">
-          Trip total
-        </Typography>
-        <Typography variant="h4" component="p">
-          {formatCost(overallTotal + itineraryTotal)}
-        </Typography>
-      </Box>
+      <TripTotal
+        total={overallTotal + itineraryTotal}
+        peopleCount={peopleCount}
+        isAdmin={isAdmin}
+      />
 
       <Divider />
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
+import { setPeopleCount } from "@/lib/settings-db";
 import { ensureTripCostsSeeded } from "@/lib/trip-costs-db";
 
 // Admin only. Arguments arrive from the client, so they're checked here too.
@@ -79,6 +80,32 @@ export async function deleteTripCost(id: number): Promise<TripCostResult> {
   } catch (error) {
     console.error("deleteTripCost failed", error);
     return { ok: false, message: "Couldn't delete. Try again." };
+  }
+  revalidatePath("/costs");
+  return { ok: true };
+}
+
+// Not exported: a "use server" file may only export async functions.
+const MAX_PEOPLE = 100;
+
+/** Sets how many people the trip total is split between. */
+export async function savePeopleCount(
+  rawCount: string,
+): Promise<TripCostResult> {
+  if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
+  const text = typeof rawCount === "string" ? rawCount.trim() : "";
+  const count = Number(text);
+  if (!text || !Number.isInteger(count) || count < 1 || count > MAX_PEOPLE) {
+    return {
+      ok: false,
+      message: `Enter a whole number from 1 to ${MAX_PEOPLE}.`,
+    };
+  }
+  try {
+    await setPeopleCount(count);
+  } catch (error) {
+    console.error("savePeopleCount failed", error);
+    return { ok: false, message: "Couldn't save. Try again." };
   }
   revalidatePath("/costs");
   return { ok: true };

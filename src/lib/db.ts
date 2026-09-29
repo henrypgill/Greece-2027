@@ -76,6 +76,13 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         cost numeric(10, 2) NOT NULL
       )
     `;
+    // Single values for the whole trip, by name (see settings-db.ts).
+    await sql`
+      CREATE TABLE IF NOT EXISTS settings (
+        key text PRIMARY KEY,
+        value text NOT NULL
+      )
+    `;
   })().catch((error) => {
     schemaReady = undefined; // retry next time rather than caching the failure
     throw error;
