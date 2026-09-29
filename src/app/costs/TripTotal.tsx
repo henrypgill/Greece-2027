@@ -16,15 +16,15 @@ import { formatCost } from "@/data/itinerary";
 import { savePeopleCount } from "./actions";
 
 /**
- * The per-person cost at the top of the Costs page: the whole-trip total
- * split between `peopleCount` people. Admins can change the number of people.
+ * The per-person cost at the top of the Costs page (see costPerPerson), with
+ * the total for the whole group. Admins can change the number of people.
  */
 export default function TripTotal({
-  total,
+  perPerson,
   peopleCount,
   isAdmin,
 }: {
-  total: number;
+  perPerson: number;
   peopleCount: number;
   isAdmin: boolean;
 }) {
@@ -38,11 +38,11 @@ export default function TripTotal({
         Per person
       </Typography>
       <Typography variant="h4" component="p">
-        {formatCost(total / peopleCount)}
+        {formatCost(perPerson)}
       </Typography>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          {formatCost(total)} total · {people}
+          {formatCost(perPerson * peopleCount)} total · {people}
         </Typography>
         {isAdmin && (
           <IconButton
@@ -111,7 +111,7 @@ function PeopleDialog({
             autoFocus
             required
             error={Boolean(error)}
-            helperText={error ?? "The trip total is split between this many."}
+            helperText={error ?? "Shared costs are split between this many."}
             slotProps={{ htmlInput: { inputMode: "numeric" } }}
           />
         </Stack>

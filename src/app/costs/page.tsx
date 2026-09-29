@@ -20,6 +20,7 @@ import { loadItinerary } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
 import { loadPeopleCount } from "@/lib/settings-db";
 import { loadTripCosts } from "@/lib/trip-costs-db";
+import { costPerPerson } from "@/data/trip-costs";
 import TripCosts from "./TripCosts";
 import TripTotal from "./TripTotal";
 
@@ -60,7 +61,6 @@ export default async function CostsPage() {
       </Alert>
     );
   }
-  const overallTotal = sumCosts(tripCosts);
   const itineraryTotal = itinerary.reduce(
     (sum, item) => sum + itemTotalCost(item),
     0,
@@ -70,7 +70,7 @@ export default async function CostsPage() {
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
       <TripTotal
-        total={overallTotal + itineraryTotal}
+        perPerson={costPerPerson(tripCosts, itineraryTotal, peopleCount)}
         peopleCount={peopleCount}
         isAdmin={isAdmin}
       />
@@ -78,7 +78,11 @@ export default async function CostsPage() {
       <Divider />
 
       <Box>
-        <TripCosts costs={tripCosts} isAdmin={isAdmin} />
+        <TripCosts
+          costs={tripCosts}
+          peopleCount={peopleCount}
+          isAdmin={isAdmin}
+        />
       </Box>
 
       <Divider />

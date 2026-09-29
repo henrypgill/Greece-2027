@@ -7,9 +7,11 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -18,18 +20,25 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
-import { formatCost, sumCosts } from "@/data/itinerary";
-import type { TripCost } from "@/lib/trip-costs-db";
+import { formatCost } from "@/data/itinerary";
+import { tripCostsForGroup, type TripCost } from "@/data/trip-costs";
 import { deleteTripCost, saveTripCost, type TripCostResult } from "./actions";
 
-type Editing = { id: number | "new"; item: string; cost: string } | null;
+type Editing = {
+  id: number | "new";
+  item: string;
+  cost: string;
+  perPerson: boolean;
+} | null;
 
 /** The "Overall trip costs" table; admins can add, edit and delete rows. */
 export default function TripCosts({
   costs,
+  peopleCount,
   isAdmin,
 }: {
   costs: TripCost[];
+  peopleCount: number;
   isAdmin: boolean;
 }) {
   const [editing, setEditing] = useState<Editing>(null);
@@ -47,7 +56,9 @@ export default function TripCosts({
           <Button
             size="small"
             startIcon={<AddIcon />}
-            onClick={() => setEditing({ id: "new", item: "", cost: "" })}
+            onClick={() =>
+              setEditing({ id: "new", item: "", cost: "", perPerson: false })
+            }
           >
             Add cost
           </Button>
@@ -61,6 +72,13 @@ export default function TripCosts({
               <TableCell sx={{ pl: 0 }}>{c.item}</TableCell>
               <TableCell align="right" sx={{ pr: isAdmin ? 1 : 0 }}>
                 {formatCost(c.cost)}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
+                  {c.perPerson ? "per person" : "shared"}
+                </Typography>
               </TableCell>
               {isAdmin && (
                 <TableCell padding="none" align="right" sx={{ width: 40 }}>
@@ -72,6 +90,7 @@ export default function TripCosts({
                         id: c.id,
                         item: c.item,
                         cost: String(c.cost),
+                        perPerson: c.perPerson,
                       })
                     }
                   >
@@ -83,13 +102,13 @@ export default function TripCosts({
           ))}
           <TableRow>
             <TableCell sx={{ pl: 0, fontWeight: 500, border: 0 }}>
-              Subtotal
+              Subtotal for everyone
             </TableCell>
             <TableCell
               align="right"
               sx={{ pr: isAdmin ? 1 : 0, fontWeight: 500, border: 0 }}
             >
-              {formatCost(sumCosts(costs))}
+              {formatCost(tripCostsForGroup(costs, peopleCount))}
             </TableCell>
             {isAdmin && <TableCell sx={{ border: 0 }} />}
           </TableRow>
@@ -116,6 +135,7 @@ function TripCostDialog({
 }) {
   const [item, setItem] = useState(initial.item);
   const [cost, setCost] = useState(initial.cost);
+  const [perPerson, setPerPerson] = useState(initial.perPerson);
   const [result, setResult] = useState<TripCostResult | null>(null);
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
@@ -142,7 +162,7 @@ function TripCostDialog({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    run(() => saveTripCost(initial.id, item, cost), startSaving);
+    run(() => saveTripCost(initial.id, item, cost, perPerson), startSaving);
   }
 
   function handleDelete() {
@@ -196,6 +216,19 @@ function TripCostDialog({
                 ),
               },
             }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={perPerson}
+                onChange={(e) => setPerPerson(e.target.checked)}
+              />
+            }
+            label={
+              perPerson
+                ? "Per person: everyone pays this amount"
+                : "Shared: this amount is split between everyone"
+            }
           />
           {error && !error.field && (
             <Alert severity="error">{error.message}</Alert>

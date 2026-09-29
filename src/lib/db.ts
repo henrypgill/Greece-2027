@@ -76,6 +76,12 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         cost numeric(10, 2) NOT NULL
       )
     `;
+    // true: the amount is per person (e.g. flights); false: it's split
+    // between everyone (e.g. the charter). Added after the table existed.
+    await sql`
+      ALTER TABLE trip_costs
+      ADD COLUMN IF NOT EXISTS per_person boolean NOT NULL DEFAULT false
+    `;
     // Single values for the whole trip, by name (see settings-db.ts).
     await sql`
       CREATE TABLE IF NOT EXISTS settings (

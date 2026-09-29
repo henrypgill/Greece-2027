@@ -18,6 +18,7 @@ export async function saveTripCost(
   id: number | "new",
   rawItem: string,
   rawCost: string,
+  rawPerPerson: boolean,
 ): Promise<TripCostResult> {
   if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
   if (id !== "new" && !Number.isInteger(id)) {
@@ -45,21 +46,23 @@ export async function saveTripCost(
     };
   }
   const amount = Math.round(cost * 100) / 100;
+  const perPerson = rawPerPerson === true;
 
   try {
     await ensureTripCostsSeeded();
     const sql = await db();
     if (id === "new") {
       await sql`
-        INSERT INTO trip_costs (sort_order, item, cost)
+        INSERT INTO trip_costs (sort_order, item, cost, per_person)
         VALUES (
           (SELECT COALESCE(MAX(sort_order), 0) + 10 FROM trip_costs),
-          ${item}, ${amount}
+          ${item}, ${amount}, ${perPerson}
         )
       `;
     } else {
       await sql`
-        UPDATE trip_costs SET item = ${item}, cost = ${amount}
+        UPDATE trip_costs
+        SET item = ${item}, cost = ${amount}, per_person = ${perPerson}
         WHERE id = ${id}
       `;
     }
@@ -88,7 +91,7 @@ export async function deleteTripCost(id: number): Promise<TripCostResult> {
 // Not exported: a "use server" file may only export async functions.
 const MAX_PEOPLE = 100;
 
-/** Sets how many people the trip total is split between. */
+/** Sets how many people shared costs are split between. */
 export async function savePeopleCount(
   rawCount: string,
 ): Promise<TripCostResult> {
