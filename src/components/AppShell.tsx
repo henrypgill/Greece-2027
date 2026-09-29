@@ -18,8 +18,9 @@ import HomeIcon from "@mui/icons-material/Home";
 import MenuIcon from "@mui/icons-material/Menu";
 import RouteIcon from "@mui/icons-material/Route";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import EuroIcon from "@mui/icons-material/Euro";
+import CurrencyPoundIcon from "@mui/icons-material/CurrencyPound";
 import GroupIcon from "@mui/icons-material/Group";
+import LuggageIcon from "@mui/icons-material/Luggage";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 // Upper bound of common single-screen phone widths (e.g. iPhone Pro Max).
@@ -29,7 +30,8 @@ const NAV_ITEMS = [
   { label: "Home", href: "/", icon: <HomeIcon /> },
   { label: "Route", href: "/route", icon: <RouteIcon /> },
   { label: "Itinerary", href: "/itinerary", icon: <EventNoteIcon /> },
-  { label: "Costs", href: "/costs", icon: <EuroIcon /> },
+  { label: "Costs", href: "/costs", icon: <CurrencyPoundIcon /> },
+  { label: "Things to bring", href: "/bring", icon: <LuggageIcon /> },
   { label: "Attendance", href: "/attendance", icon: <GroupIcon /> },
 ];
 
