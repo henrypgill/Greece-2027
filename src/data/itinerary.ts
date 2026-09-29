@@ -23,6 +23,8 @@ export type CostItem = {
 };
 
 export type ItineraryItem = {
+  /** Database id. */
+  id: number;
   title: string;
   /** ISO 8601 date-time, e.g. "2027-07-16T15:00:00+03:00" or "…T12:00:00.000Z". */
   start: string;

@@ -16,7 +16,8 @@ Phone-only layout, capped at 430px wide (upper bound of common phone widths), ce
 
 - `/` — Home. Empty (`src/app/page.tsx`).
 - `/route` — A full-page Mapbox map (`src/components/RouteMap.tsx`) showing every itinerary item as a numbered pin, in itinerary order, with a straight line between consecutive items and an arrowhead at each line's midpoint showing direction. Opens zoomed to fit all pins. Tapping a pin shows its number and title.
-- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here.
+- `/itinerary` — An expandable list (MUI `Accordion`) of itinerary items (`src/app/itinerary/page.tsx`). Row header: number + title. Expanded: start → end (always shown in Greek time, `Europe/Athens`), markdown description (`react-markdown`), optional "Open in Google Maps" button, and the travel time to the next item. Costs are deliberately not shown here. An "Edit itinerary" button and a per-stop "Edit this stop" link lead to the editor.
+- `/itinerary/edit` — In-app itinerary editor (`src/app/itinerary/edit/`). The list page reorders stops (up/down arrows: swap with the neighbour, then renumber every `sort_order` 10, 20, 30…) and links to `/itinerary/edit/new` and `/itinerary/edit/[id]`, a form (`StopForm.tsx`) for all fields plus cost lines, with delete on existing stops. Times are entered as Greek local time (`datetime-local`) and converted in SQL (`::timestamp AT TIME ZONE 'Europe/Athens'`). Saving an existing stop replaces its cost lines in the same statement. All mutations are Server Actions (`actions.ts`) that check the session via `src/lib/session.ts`, validate server-side, and `revalidatePath('/', 'layout')`. Not in the nav; the AppShell treats sub-paths as part of their parent nav item.
 - `/costs` — Trip total at the top (sum of everything below), then "Overall trip costs" (`TRIP_COSTS` in `src/data/trip-costs.ts`, still static code: flights, charter, etc.), then a day-by-day breakdown of itinerary item costs, grouped by the Greek-time day each item starts (`src/app/costs/page.tsx`).
 - `/attendance` — "I'm going" form (first + last name, both required) and the list of everyone who's signed up, in sign-up order (`src/app/attendance/`). Submits via a Server Action (`actions.ts`), which re-checks the session cookie itself since Server Actions can be POSTed to directly. Names are unique case-insensitively, so signing up twice just says you're already on the list. No emails are collected. There's no way to remove a name from the UI yet — do it in the Neon console.
 
@@ -31,7 +32,7 @@ The itinerary lives in Neon Postgres, in two tables:
 
 Travel time between items isn't stored; it's derived as the gap between one item's `end` and the next item's `start` (`getLegs()`).
 
-**Seeding:** the tables were first filled from `src/data/itinerary-seed.ts`. This happens exactly once per database, tracked by the row `itinerary-v1` in the `seeds` table, in a single atomic statement, so concurrent server instances can't double-seed and deleting every item won't bring the seed back. Editing the seed file now has no effect. There's no editing UI yet: change the itinerary in the Neon console's table editor (enter times with an offset, e.g. `2027-07-16 15:00+03`). The seeded data had real route/dates but placeholder times for most stops and all end times, empty costs, and an approximate Liems cove pin (Ios island centre).
+**Seeding:** the tables were first filled from `src/data/itinerary-seed.ts`. This happens exactly once per database, tracked by the row `itinerary-v1` in the `seeds` table, in a single atomic statement, so concurrent server instances can't double-seed and deleting every item won't bring the seed back. Editing the seed file now has no effect. Edit the itinerary in the app at `/itinerary/edit` (or directly in the Neon console, entering times with an offset, e.g. `2027-07-16 15:00+03`). The seeded data had real route/dates but placeholder times for most stops and all end times, empty costs, and an approximate Liems cove pin (Ios island centre).
 
 ## Password gate
 
@@ -80,7 +81,6 @@ This is explicitly a for-fun project, not one following normal engineering pract
 - Swim spots / anchorages on the Route map: Navily (the obvious data source) has **no public API** — confirmed by web search, nothing beyond the consumer app/website exists. Leaning towards manually curating a short list of spots (name + coordinates) and adding them as a second marker type alongside the itinerary pins, rather than scraping Navily's site (likely against their ToS) or pulling in a heavier open-data source (OpenSeaMap etc.) for a hobby project.
 - Home page is still an empty placeholder with no design direction agreed yet.
 - Replace the placeholder itinerary times/costs with the real plan.
-- An in-app editor for the itinerary (currently edited in the Neon console).
 
 ## Scripts
 

@@ -38,11 +38,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // browser window, so it stays within the column on wider screens.
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
 
+  // A nav item is active on its own page and any page under it
+  // (e.g. /itinerary/edit is part of Itinerary).
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+
   const title =
     pathname === "/"
       ? "Greece 2027"
-      : (NAV_ITEMS.find((item) => item.href === pathname)?.label ??
-        "Greece 2027");
+      : (NAV_ITEMS.find((item) => isActive(item.href))?.label ?? "Greece 2027");
 
   // The login page is shown on its own, without the top bar and menu.
   if (pathname === "/login") return <>{children}</>;
@@ -100,7 +104,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               component={Link}
               href={item.href}
-              selected={pathname === item.href}
+              selected={isActive(item.href)}
               onClick={() => setOpen(false)}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
