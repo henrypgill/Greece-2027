@@ -53,7 +53,7 @@ export default async function CostsPage() {
     loadPeopleCount(),
     isAdminSession(),
   ]);
-  if (!itinerary || !tripCosts || peopleCount === undefined) {
+  if (!itinerary || !tripCosts || peopleCount === null) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
         The costs couldn&apos;t be loaded.

@@ -25,27 +25,24 @@ export default function TripTotal({
   isAdmin,
 }: {
   total: number;
-  /** Null until an admin has set it. */
-  peopleCount: number | null;
+  peopleCount: number;
   isAdmin: boolean;
 }) {
   const [editing, setEditing] = useState(false);
 
-  const people = peopleCount
-    ? `${peopleCount} ${peopleCount === 1 ? "person" : "people"}`
-    : "Number of people not set yet";
+  const people = `${peopleCount} ${peopleCount === 1 ? "person" : "people"}`;
 
   return (
     <Box>
       <Typography variant="overline" color="text.secondary">
-        {peopleCount ? "Per person" : "Trip total"}
+        Per person
       </Typography>
       <Typography variant="h4" component="p">
-        {formatCost(peopleCount ? total / peopleCount : total)}
+        {formatCost(total / peopleCount)}
       </Typography>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          {peopleCount ? `${formatCost(total)} total · ${people}` : people}
+          {formatCost(total)} total · {people}
         </Typography>
         {isAdmin && (
           <IconButton
@@ -69,10 +66,10 @@ function PeopleDialog({
   initial,
   onClose,
 }: {
-  initial: number | null;
+  initial: number;
   onClose: () => void;
 }) {
-  const [value, setValue] = useState(initial ? String(initial) : "");
+  const [value, setValue] = useState(String(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
 

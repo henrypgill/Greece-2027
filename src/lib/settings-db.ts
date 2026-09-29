@@ -1,35 +1,34 @@
 import { db } from "@/lib/db";
 
 // Single trip-wide values, stored as text in the settings table by key.
+// Starting values are inserted in db.ts.
 
 const PEOPLE_COUNT = "people_count";
 
 /**
  * How many people the trip total is split between, as set by an admin on the
- * Costs page. Null until it's been set. (Not derived from attendance sign-ups.)
+ * Costs page (starts at 10; not derived from attendance sign-ups).
  */
-export async function getPeopleCount(): Promise<number | null> {
+export async function getPeopleCount(): Promise<number> {
   const sql = await db();
   const rows =
     await sql`SELECT value FROM settings WHERE key = ${PEOPLE_COUNT}`;
-  const count = Number(rows[0]?.value);
-  return Number.isInteger(count) && count > 0 ? count : null;
+  return Number(rows[0].value);
 }
 
 export async function setPeopleCount(count: number): Promise<void> {
   const sql = await db();
   await sql`
-    INSERT INTO settings (key, value) VALUES (${PEOPLE_COUNT}, ${String(count)})
-    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+    UPDATE settings SET value = ${String(count)} WHERE key = ${PEOPLE_COUNT}
   `;
 }
 
-/** Like getPeopleCount, but logs and returns undefined on failure. */
-export async function loadPeopleCount(): Promise<number | null | undefined> {
+/** Like getPeopleCount, but logs and returns null on failure. */
+export async function loadPeopleCount(): Promise<number | null> {
   try {
     return await getPeopleCount();
   } catch (error) {
     console.error("getPeopleCount failed", error);
-    return undefined;
+    return null;
   }
 }

@@ -83,6 +83,11 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         value text NOT NULL
       )
     `;
+    // Starting values; never overwrites one that's been changed.
+    await sql`
+      INSERT INTO settings (key, value) VALUES ('people_count', '10')
+      ON CONFLICT (key) DO NOTHING
+    `;
   })().catch((error) => {
     schemaReady = undefined; // retry next time rather than caching the failure
     throw error;
