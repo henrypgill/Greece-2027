@@ -49,6 +49,11 @@ export default function LoginPage() {
         setError(
           `Incorrect password. ${left} attempt${left === 1 ? "" : "s"} left.`,
         );
+      } else if (data.error === "not_configured") {
+        // USER_PASSWORD, ADMIN_PASSWORD or AUTH_SECRET is missing in Vercel.
+        setError(
+          "Login isn't set up on the server yet: the password settings are missing.",
+        );
       } else {
         setError("Something went wrong. Try again.");
       }
