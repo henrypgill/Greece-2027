@@ -1,9 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { hasValidSession, isAdminSession } from "@/lib/session";
 
 export type AttendState = {
   status: "idle" | "success" | "error";
@@ -34,8 +33,7 @@ export async function addAttendee(
 async function handleAttend(formData: FormData): Promise<AttendState> {
   // Server Actions can be POSTed to directly, so check the session here too,
   // not just in the proxy.
-  const cookieStore = await cookies();
-  if (!(await verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value))) {
+  if (!(await hasValidSession())) {
     return {
       status: "error",
       message: "Your session has expired. Log in again.",
@@ -79,5 +77,68 @@ async function handleAttend(formData: FormData): Promise<AttendState> {
       message: "Something went wrong. Try again.",
       ...echo,
     };
+  }
+}
+
+// Admin only. Arguments arrive from the client, so they're checked here too.
+
+export type AdminResult = { ok: true } | { ok: false; message: string };
+
+const NOT_ADMIN = "Only admins can do this. Log in with the admin password.";
+
+export async function updateAttendee(
+  id: number,
+  rawFirstName: string,
+  rawLastName: string,
+): Promise<AdminResult> {
+  if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
+  if (!Number.isInteger(id)) return { ok: false, message: "Unknown person." };
+  const firstName = clean(rawFirstName);
+  const lastName = clean(rawLastName);
+  if (!firstName || !lastName) {
+    return { ok: false, message: "Enter a first and last name." };
+  }
+  if (firstName.length > MAX_LENGTH || lastName.length > MAX_LENGTH) {
+    return { ok: false, message: "That name is too long." };
+  }
+  try {
+    const sql = await db();
+    // Changes nothing if someone else already has that name.
+    const updated = await sql`
+      UPDATE attendees SET first_name = ${firstName}, last_name = ${lastName}
+      WHERE id = ${id}
+        AND NOT EXISTS (
+          SELECT 1 FROM attendees
+          WHERE id <> ${id}
+            AND lower(first_name) = lower(${firstName})
+            AND lower(last_name) = lower(${lastName})
+        )
+      RETURNING id
+    `;
+    revalidatePath("/attendance");
+    if (updated.length === 0) {
+      return {
+        ok: false,
+        message: `${firstName} ${lastName} is already on the list.`,
+      };
+    }
+    return { ok: true };
+  } catch (error) {
+    console.error("updateAttendee failed", error);
+    return { ok: false, message: "Couldn't save. Try again." };
+  }
+}
+
+export async function removeAttendee(id: number): Promise<AdminResult> {
+  if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
+  if (!Number.isInteger(id)) return { ok: false, message: "Unknown person." };
+  try {
+    const sql = await db();
+    await sql`DELETE FROM attendees WHERE id = ${id}`;
+    revalidatePath("/attendance");
+    return { ok: true };
+  } catch (error) {
+    console.error("removeAttendee failed", error);
+    return { ok: false, message: "Couldn't remove. Try again." };
   }
 }

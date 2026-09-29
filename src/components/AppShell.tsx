@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
@@ -19,6 +20,7 @@ import RouteIcon from "@mui/icons-material/Route";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import EuroIcon from "@mui/icons-material/Euro";
 import GroupIcon from "@mui/icons-material/Group";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 // Upper bound of common single-screen phone widths (e.g. iPhone Pro Max).
 const MAX_WIDTH = 430;
@@ -33,13 +35,24 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   // The drawer is rendered inside the phone-width shell rather than the
   // browser window, so it stays within the column on wider screens.
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
 
-  // A nav item is active on its own page and any page under it
-  // (e.g. /itinerary/edit is part of Itinerary).
+  // Logging out is also how to switch between the user and admin password.
+  async function logOut() {
+    setOpen(false);
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  }
+
+  // A nav item is active on its own page and any page under it.
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
@@ -111,6 +124,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <ListItemText primary={item.label} />
             </ListItemButton>
           ))}
+        </List>
+        <Divider />
+        <List>
+          <ListItemButton onClick={logOut}>
+            <ListItemIcon>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText primary="Log out" />
+          </ListItemButton>
         </List>
       </Drawer>
 

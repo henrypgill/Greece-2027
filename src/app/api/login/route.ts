@@ -4,6 +4,7 @@ import {
   SESSION_TTL_SECONDS,
   createSessionToken,
   safeEqual,
+  type Role,
 } from "@/lib/auth";
 import {
   checkLimit,
@@ -28,8 +29,9 @@ export async function POST(request: NextRequest) {
   const limit = checkLimit(ip);
   if (limit.blocked) return tooManyAttempts(limit);
 
-  const expected = process.env.APP_PASSWORD;
-  if (!expected || !process.env.AUTH_SECRET) {
+  const userPassword = process.env.USER_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!userPassword || !adminPassword || !process.env.AUTH_SECRET) {
     return NextResponse.json({ error: "not_configured" }, { status: 500 });
   }
 
@@ -41,7 +43,18 @@ export async function POST(request: NextRequest) {
     // Treated as an empty (wrong) password below.
   }
 
-  if (!password || !safeEqual(password, expected)) {
+  // Both comparisons always run, so timing doesn't hint which one matched.
+  const isAdmin = safeEqual(password, adminPassword);
+  const isUser = safeEqual(password, userPassword);
+  const role: Role | null = !password
+    ? null
+    : isAdmin
+      ? "admin"
+      : isUser
+        ? "user"
+        : null;
+
+  if (!role) {
     const after = recordFailure(ip);
     if (after.blocked) return tooManyAttempts(after);
     return NextResponse.json(
@@ -50,7 +63,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const token = await createSessionToken();
+  const token = await createSessionToken(role);
   if (!token) {
     return NextResponse.json({ error: "not_configured" }, { status: 500 });
   }

@@ -1,9 +1,15 @@
-// Session tokens: "<expiry-ms>.<HMAC-SHA256 signature>", stored in an httpOnly
-// cookie. Stateless, so no database is needed. Uses Web Crypto so it works in
-// both the proxy and route handlers.
+// Session tokens: "<role>.<expiry-ms>.<HMAC-SHA256 signature of role.expiry>",
+// stored in an httpOnly cookie. Stateless, so no database is needed. Uses Web
+// Crypto so it works in both the proxy and route handlers.
+//
+// Two roles: "user" (USER_PASSWORD) sees the site; "admin" (ADMIN_PASSWORD)
+// can also edit the itinerary and the attendance list.
 
 export const SESSION_COOKIE = "session";
 export const SESSION_TTL_SECONDS = 2 * 60 * 60; // 2 hours
+
+export type Role = "user" | "admin";
+const ROLES: readonly Role[] = ["user", "admin"];
 
 const encoder = new TextEncoder();
 
@@ -39,25 +45,38 @@ export function safeEqual(a: string, b: string): boolean {
 }
 
 /** Returns a new token, or null if AUTH_SECRET is not configured. */
-export async function createSessionToken(): Promise<string | null> {
+export async function createSessionToken(role: Role): Promise<string | null> {
   const secret = process.env.AUTH_SECRET;
   if (!secret) return null;
-  const expires = String(Date.now() + SESSION_TTL_SECONDS * 1000);
-  return `${expires}.${await sign(expires, secret)}`;
+  const payload = `${role}.${Date.now() + SESSION_TTL_SECONDS * 1000}`;
+  return `${payload}.${await sign(payload, secret)}`;
 }
 
-/** Fails closed: any missing config, malformed or expired token is rejected. */
+/**
+ * The token's role, or null if it isn't valid. Fails closed: any missing
+ * config, malformed (including old pre-role tokens) or expired token is null.
+ */
+export async function getTokenRole(
+  token: string | null | undefined,
+): Promise<Role | null> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || !token) return null;
+
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [role, expires, signature] = parts;
+  if (!ROLES.includes(role as Role)) return null;
+
+  const expiresAt = Number(expires);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return null;
+
+  const valid = safeEqual(signature, await sign(`${role}.${expires}`, secret));
+  return valid ? (role as Role) : null;
+}
+
+/** True for any signed-in role. */
 export async function verifySessionToken(
   token: string | null | undefined,
 ): Promise<boolean> {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || !token) return false;
-
-  const [expires, signature] = token.split(".");
-  if (!expires || !signature) return false;
-
-  const expiresAt = Number(expires);
-  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
-
-  return safeEqual(signature, await sign(expires, secret));
+  return (await getTokenRole(token)) !== null;
 }

@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 // Everything except these requires a valid session cookie. The login page and
-// its API are public; /_next/static and /_next/image are excluded by the
+// the login/logout APIs are public (logging out has to work even with an
+// expired session); /_next/static and /_next/image are excluded by the
 // matcher below so the login page can load its own JS/CSS.
-const PUBLIC_PATHS = ["/login", "/api/login"];
+const PUBLIC_PATHS = ["/login", "/api/login", "/api/logout"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

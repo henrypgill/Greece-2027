@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { TRIP_TIME_ZONE } from "@/data/itinerary";
 import { db } from "@/lib/db";
 import { ensureSeeded } from "@/lib/itinerary-db";
-import { hasValidSession } from "@/lib/session";
+import { isAdminSession } from "@/lib/session";
 
 type Field =
   | "title"
@@ -17,9 +16,15 @@ type Field =
   | "costs";
 
 export type StopFormState = {
+  ok?: boolean;
   errors?: Partial<Record<Field, string>>;
   message?: string;
 };
+
+/** For actions that either work or return a message to show. */
+export type ActionResult = { ok: true } | { ok: false; message: string };
+
+const NOT_ADMIN = "Only admins can do this. Log in with the admin password.";
 
 const LOCAL_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -34,13 +39,8 @@ function refreshPages() {
 }
 
 /** Creates a stop (id "new") or updates one, including its cost lines. */
-export async function saveStop(
-  _prev: StopFormState,
-  formData: FormData,
-): Promise<StopFormState> {
-  if (!(await hasValidSession())) {
-    return { message: "Your session has expired. Log in again." };
-  }
+export async function saveStop(formData: FormData): Promise<StopFormState> {
+  if (!(await isAdminSession())) return { message: NOT_ADMIN };
 
   const idRaw = text(formData, "id");
   const id = idRaw === "new" ? null : Number(idRaw);
@@ -154,44 +154,66 @@ export async function saveStop(
   }
 
   refreshPages();
-  redirect("/itinerary/edit");
+  return { ok: true };
 }
 
-// Arguments bound with .bind() arrive from the client, so they're checked too.
+// Arguments arrive from the client, so they're checked here too.
 
-export async function deleteStop(id: number): Promise<void> {
-  if (!(await hasValidSession())) redirect("/login");
-  if (!Number.isInteger(id)) return;
-  const sql = await db();
-  await sql`DELETE FROM itinerary_items WHERE id = ${id}`;
-  refreshPages();
-  redirect("/itinerary/edit");
-}
-
-/** Swaps a stop with its neighbour, then renumbers everything 10, 20, 30… */
-export async function moveStop(
-  id: number,
-  direction: "up" | "down",
-): Promise<void> {
-  if (!(await hasValidSession())) redirect("/login");
-  if (!Number.isInteger(id) || (direction !== "up" && direction !== "down")) {
-    return;
+export async function deleteStop(id: number): Promise<ActionResult> {
+  if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
+  if (!Number.isInteger(id)) return { ok: false, message: "Unknown stop." };
+  try {
+    const sql = await db();
+    await sql`DELETE FROM itinerary_items WHERE id = ${id}`;
+  } catch (error) {
+    console.error("deleteStop failed", error);
+    return { ok: false, message: "Couldn't delete. Try again." };
   }
-  await ensureSeeded();
-  const sql = await db();
-  const rows = await sql`
-    SELECT id FROM itinerary_items ORDER BY sort_order, id
-  `;
-  const ids = rows.map((row) => Number(row.id));
-  const from = ids.indexOf(id);
-  const to = direction === "up" ? from - 1 : from + 1;
-  if (from === -1 || to < 0 || to >= ids.length) return;
-  [ids[from], ids[to]] = [ids[to], ids[from]];
-  await sql`
-    UPDATE itinerary_items AS i
-    SET sort_order = x.ord * 10
-    FROM unnest(${ids}::integer[]) WITH ORDINALITY AS x (id, ord)
-    WHERE i.id = x.id
-  `;
   refreshPages();
+  return { ok: true };
+}
+
+/**
+ * Saves a new order: `ids` is every stop's id, in the new order. Renumbers
+ * sort_order 10, 20, 30… Refuses if the list doesn't match the stops in the
+ * database (e.g. someone else added or deleted one meanwhile).
+ */
+export async function reorderStops(ids: number[]): Promise<ActionResult> {
+  if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
+  if (
+    !Array.isArray(ids) ||
+    !ids.every((id) => Number.isInteger(id)) ||
+    new Set(ids).size !== ids.length
+  ) {
+    return { ok: false, message: "Couldn't save the new order." };
+  }
+  try {
+    await ensureSeeded();
+    const sql = await db();
+    // One statement: only renumbers if the ids are exactly the current stops.
+    const updated = await sql`
+      WITH current_ids AS (SELECT array_agg(id ORDER BY id) AS ids
+                           FROM itinerary_items),
+      wanted AS (SELECT array_agg(x ORDER BY x) AS ids
+                 FROM unnest(${ids}::integer[]) AS x)
+      UPDATE itinerary_items AS i
+      SET sort_order = x.ord * 10
+      FROM unnest(${ids}::integer[]) WITH ORDINALITY AS x (id, ord),
+           current_ids, wanted
+      WHERE i.id = x.id AND current_ids.ids = wanted.ids
+      RETURNING i.id
+    `;
+    if (updated.length !== ids.length) {
+      refreshPages();
+      return {
+        ok: false,
+        message: "The itinerary changed meanwhile. Showing the latest version.",
+      };
+    }
+  } catch (error) {
+    console.error("reorderStops failed", error);
+    return { ok: false, message: "Couldn't save the new order. Try again." };
+  }
+  refreshPages();
+  return { ok: true };
 }
