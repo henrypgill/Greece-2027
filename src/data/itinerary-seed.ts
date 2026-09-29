@@ -6,7 +6,7 @@ import type { ItineraryItem } from "@/data/itinerary";
  * the database is the source of truth: editing this file changes nothing.
  */
 // Times marked "placeholder" (and all end times) were guesses to be firmed up.
-export const ITINERARY_SEED: Omit<ItineraryItem, "id">[] = [
+export const ITINERARY_SEED: Omit<ItineraryItem, "id" | "images">[] = [
   {
     title: "Paros: pick up the boat",
     start: "2027-07-16T15:00:00+03:00",

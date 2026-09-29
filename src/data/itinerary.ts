@@ -37,6 +37,8 @@ export type ItineraryItem = {
   /** Optional link to the place on Google Maps. */
   googleMapsUrl?: string;
   costs: CostItem[];
+  /** Photo URLs, in order, shown as a carousel. */
+  images: string[];
 };
 
 export const CURRENCY = "GBP";
@@ -172,6 +174,7 @@ export type StopFormValues = {
   lng: string;
   googleMapsUrl: string;
   costs: { item: string; cost: string }[];
+  images: string[];
 };
 
 export const EMPTY_STOP: StopFormValues = {
@@ -183,6 +186,7 @@ export const EMPTY_STOP: StopFormValues = {
   lng: "",
   googleMapsUrl: "",
   costs: [],
+  images: [],
 };
 
 const localInputFormat = new Intl.DateTimeFormat("en-GB", {
@@ -215,5 +219,6 @@ export function toStopFormValues(item: ItineraryItem): StopFormValues {
     lng: String(item.location.lng),
     googleMapsUrl: item.googleMapsUrl ?? "",
     costs: item.costs.map((c) => ({ item: c.item, cost: String(c.cost) })),
+    images: item.images,
   };
 }
