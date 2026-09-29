@@ -2,16 +2,16 @@ import { connection } from "next/server";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { isAdminSession } from "@/lib/session";
+import AttendeeList from "./AttendeeList";
 import AttendForm from "./AttendForm";
 import { listAttendees, type Attendee } from "./data";
 
 export default async function AttendancePage() {
   await connection(); // always read the list fresh, never at build time
+  const isAdmin = await isAdminSession();
 
   let attendees: Attendee[] | null = null;
   try {
@@ -44,13 +44,7 @@ export default async function AttendancePage() {
             Nobody yet. Be the first!
           </Typography>
         ) : (
-          <List dense disablePadding>
-            {attendees.map((a) => (
-              <ListItem key={`${a.firstName} ${a.lastName}`} disableGutters>
-                <ListItemText primary={`${a.firstName} ${a.lastName}`} />
-              </ListItem>
-            ))}
-          </List>
+          <AttendeeList attendees={attendees} isAdmin={isAdmin} />
         )}
       </Box>
     </Stack>

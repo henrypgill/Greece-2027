@@ -4,7 +4,7 @@
  * are shown in order, and the map draws numbered pins (1, 2, 3…) with arrows
  * between consecutive items.
  *
- * Travel time between two items is not stored. It's derived as the gap
+ * Travel time between items is not stored. It's derived as the gap
  * between one item's `end` and the next item's `start` (see `getLegs`).
  *
  * This file has no server-only imports, so client components can use it.
@@ -153,4 +153,60 @@ const currencyFormat = new Intl.NumberFormat("en-GB", {
 
 export function formatCost(amount: number): string {
   return currencyFormat.format(amount);
+}
+
+/** A stop as the edit form needs it: times as Greek local "YYYY-MM-DDTHH:mm". */
+export type StopFormValues = {
+  title: string;
+  start: string;
+  end: string;
+  description: string;
+  lat: string;
+  lng: string;
+  googleMapsUrl: string;
+  costs: { item: string; cost: string }[];
+};
+
+export const EMPTY_STOP: StopFormValues = {
+  title: "",
+  start: "",
+  end: "",
+  description: "",
+  lat: "",
+  lng: "",
+  googleMapsUrl: "",
+  costs: [],
+};
+
+const localInputFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TRIP_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** An ISO date-time as a Greek-time `datetime-local` value, "YYYY-MM-DDTHH:mm". */
+export function toGreekLocalInput(iso: string): string {
+  const parts = Object.fromEntries(
+    localInputFormat
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+export function toStopFormValues(item: ItineraryItem): StopFormValues {
+  return {
+    title: item.title,
+    start: toGreekLocalInput(item.start),
+    end: toGreekLocalInput(item.end),
+    description: item.description,
+    lat: String(item.location.lat),
+    lng: String(item.location.lng),
+    googleMapsUrl: item.googleMapsUrl ?? "",
+    costs: item.costs.map((c) => ({ item: c.item, cost: String(c.cost) })),
+  };
 }
