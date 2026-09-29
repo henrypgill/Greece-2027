@@ -15,7 +15,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import type { StopFormValues } from "@/data/itinerary";
+import { CURRENCY_SYMBOL, type StopFormValues } from "@/data/itinerary";
 import { deleteStop, saveStop, type StopFormState } from "./actions";
 
 type CostRow = { key: number; item: string; cost: string };
@@ -194,7 +194,9 @@ export default function StopDialog({
                       htmlInput: { inputMode: "decimal" },
                       input: {
                         startAdornment: (
-                          <InputAdornment position="start">€</InputAdornment>
+                          <InputAdornment position="start">
+                            {CURRENCY_SYMBOL}
+                          </InputAdornment>
                         ),
                       },
                     }}

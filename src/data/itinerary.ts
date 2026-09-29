@@ -18,7 +18,7 @@ export type GeoLocation = {
 export type CostItem = {
   /** What the money is for, e.g. "Ferry tickets" or "Hotel, 3 nights". */
   item: string;
-  /** Amount in euros (see `CURRENCY`). */
+  /** Amount in pounds (see `CURRENCY`). */
   cost: number;
 };
 
@@ -39,7 +39,9 @@ export type ItineraryItem = {
   costs: CostItem[];
 };
 
-export const CURRENCY = "EUR";
+export const CURRENCY = "GBP";
+/** Shown in front of amount inputs; keep in step with CURRENCY. */
+export const CURRENCY_SYMBOL = "£";
 
 /** Dates/times are shown in Greek local time, whatever the viewer's device says. */
 export const TRIP_TIME_ZONE = "Europe/Athens";

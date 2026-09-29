@@ -20,7 +20,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
-import { formatCost } from "@/data/itinerary";
+import { CURRENCY_SYMBOL, formatCost } from "@/data/itinerary";
 import { tripCostsForGroup, type TripCost } from "@/data/trip-costs";
 import { deleteTripCost, saveTripCost, type TripCostResult } from "./actions";
 
@@ -212,7 +212,9 @@ function TripCostDialog({
               htmlInput: { inputMode: "decimal" },
               input: {
                 startAdornment: (
-                  <InputAdornment position="start">€</InputAdornment>
+                  <InputAdornment position="start">
+                    {CURRENCY_SYMBOL}
+                  </InputAdornment>
                 ),
               },
             }}
