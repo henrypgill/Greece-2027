@@ -48,6 +48,7 @@ import {
   type ItineraryItem,
 } from "@/data/itinerary";
 import { reorderStops } from "./actions";
+import ImageCarousel from "./ImageCarousel";
 import StopDialog from "./StopDialog";
 
 type Editing = { id: number | "new"; item?: ItineraryItem } | null;
@@ -190,11 +191,7 @@ type RowProps = {
 };
 
 function ItineraryRow(props: RowProps) {
-  return props.isAdmin ? (
-    <SortableRow {...props} />
-  ) : (
-    <RowContent {...props} />
-  );
+  return props.isAdmin ? <SortableRow {...props} /> : <RowContent {...props} />;
 }
 
 const stop = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -308,6 +305,10 @@ function RowContent({
               </IconButton>
             )}
           </Stack>
+
+          {item.images.length > 0 && (
+            <ImageCarousel images={item.images} title={item.title} />
+          )}
 
           {item.description && (
             <Box

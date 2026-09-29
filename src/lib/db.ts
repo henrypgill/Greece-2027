@@ -7,7 +7,16 @@ import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 const TRIP_DESCRIPTION =
   "A week sailing the Cyclades in July 2027. We pick up the boat on Paros " +
   "and island-hop via Antiparos, Ios, Santorini, Naxos and Mykonos, with " +
-  "swim stops in quiet coves along the way, before heading back to Paros.";
+  "swim stops in quiet coves along the way and a big party night on " +
+  "Mykonos, before heading back to Paros.";
+
+/** Earlier starting descriptions, replaced by TRIP_DESCRIPTION if unedited. */
+const OLD_TRIP_DESCRIPTIONS = [
+  "A Greek island-hopping boat trip, July 2027.",
+  "A week sailing the Cyclades in July 2027. We pick up the boat on Paros " +
+    "and island-hop via Antiparos, Ios, Santorini, Naxos and Mykonos, with " +
+    "swim stops in quiet coves along the way, before heading back to Paros.",
+];
 
 let client: NeonQueryFunction<false, false> | undefined;
 let schemaReady: Promise<void> | undefined;
@@ -73,6 +82,17 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         cost numeric(10, 2) NOT NULL
       )
     `;
+    // Photo URLs for each stop, shown as a carousel (links to images hosted
+    // elsewhere; nothing is uploaded).
+    await sql`
+      CREATE TABLE IF NOT EXISTS itinerary_images (
+        id serial PRIMARY KEY,
+        item_id integer NOT NULL
+          REFERENCES itinerary_items (id) ON DELETE CASCADE,
+        sort_order integer NOT NULL DEFAULT 0,
+        url text NOT NULL
+      )
+    `;
     // Costs for the trip as a whole (flights, charter…), not any one stop.
     await sql`
       CREATE TABLE IF NOT EXISTS trip_costs (
@@ -111,17 +131,18 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         ('trip_description', ${TRIP_DESCRIPTION})
       ON CONFLICT (key) DO NOTHING
     `;
-    // One-off: swap the first placeholder description for the real one,
-    // unless an admin has already changed it.
+    // One-off: swap an earlier starting description for the current one,
+    // unless an admin has already changed it. Bump the seed name (v3, v4…)
+    // whenever TRIP_DESCRIPTION changes, and add the old text above.
     await sql`
       WITH claimed AS (
-        INSERT INTO seeds (name) VALUES ('trip-description-v2')
+        INSERT INTO seeds (name) VALUES ('trip-description-v3')
         ON CONFLICT DO NOTHING
         RETURNING name
       )
       UPDATE settings SET value = ${TRIP_DESCRIPTION}
       WHERE key = 'trip_description'
-        AND value = 'A Greek island-hopping boat trip, July 2027.'
+        AND value = ANY(${OLD_TRIP_DESCRIPTIONS}::text[])
         AND EXISTS (SELECT 1 FROM claimed)
     `;
   })().catch((error) => {

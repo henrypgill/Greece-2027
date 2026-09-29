@@ -1,7 +1,4 @@
-import {
-  type CostItem,
-  type ItineraryItem,
-} from "@/data/itinerary";
+import { type CostItem, type ItineraryItem } from "@/data/itinerary";
 import { ITINERARY_SEED } from "@/data/itinerary-seed";
 import { db } from "@/lib/db";
 
@@ -76,7 +73,7 @@ function toIso(value: unknown): string {
   return new Date(value as string | Date).toISOString();
 }
 
-/** The whole itinerary, in order, with each item's costs. */
+/** The whole itinerary, in order, with each item's costs and photos. */
 export async function getItinerary(): Promise<ItineraryItem[]> {
   await ensureSeeded();
   const sql = await db();
@@ -85,15 +82,23 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
       i.id, i.title, i.start_at, i.end_at, i.description, i.lat, i.lng,
       i.google_maps_url,
       COALESCE(
-        json_agg(
-          json_build_object('item', c.item, 'cost', c.cost)
-          ORDER BY c.sort_order, c.id
-        ) FILTER (WHERE c.id IS NOT NULL),
+        (
+          SELECT json_agg(
+            json_build_object('item', c.item, 'cost', c.cost)
+            ORDER BY c.sort_order, c.id
+          )
+          FROM itinerary_costs c WHERE c.item_id = i.id
+        ),
         '[]'
-      ) AS costs
+      ) AS costs,
+      COALESCE(
+        (
+          SELECT json_agg(m.url ORDER BY m.sort_order, m.id)
+          FROM itinerary_images m WHERE m.item_id = i.id
+        ),
+        '[]'
+      ) AS images
     FROM itinerary_items i
-    LEFT JOIN itinerary_costs c ON c.item_id = i.id
-    GROUP BY i.id
     ORDER BY i.sort_order, i.id
   `;
   return rows.map((row) => ({
@@ -109,6 +114,7 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
     costs: (row.costs as { item: string; cost: string | number }[]).map(
       (c): CostItem => ({ item: c.item, cost: Number(c.cost) }),
     ),
+    images: row.images as string[],
   }));
 }
 
