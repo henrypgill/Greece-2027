@@ -13,7 +13,8 @@ type Field =
   | "lat"
   | "lng"
   | "googleMapsUrl"
-  | "costs";
+  | "costs"
+  | "images";
 
 export type StopFormState = {
   ok?: boolean;
@@ -25,6 +26,8 @@ export type StopFormState = {
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
 const NOT_ADMIN = "Only admins can do this. Log in with the admin password.";
+
+const MAX_IMAGES = 20;
 
 const LOCAL_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -55,6 +58,10 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
   const lat = Number(text(formData, "lat"));
   const lng = Number(text(formData, "lng"));
   const googleMapsUrl = text(formData, "googleMapsUrl");
+  const imageUrls = formData
+    .getAll("imageUrl")
+    .map((u) => String(u).trim())
+    .filter(Boolean);
   const costItems = formData.getAll("costItem").map(String);
   const costAmounts = formData.getAll("costAmount").map(String);
 
@@ -91,12 +98,23 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
     });
   });
 
+  if (imageUrls.length > MAX_IMAGES) {
+    errors.images = `Up to ${MAX_IMAGES} photos.`;
+  } else if (
+    imageUrls.some((u) => u.length > 2000 || !/^https?:\/\/\S+$/i.test(u))
+  ) {
+    errors.images = "Each photo needs a full link starting with https://";
+  }
+
   if (Object.keys(errors).length > 0) {
     return { errors, message: "Fix the highlighted fields." };
   }
 
   const url = googleMapsUrl || null;
   const costsJson = JSON.stringify(costs);
+  const imagesJson = JSON.stringify(
+    imageUrls.map((u, i) => ({ sort_order: i, url: u })),
+  );
 
   try {
     await ensureSeeded();
@@ -117,6 +135,12 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
             ${description}, ${lat}, ${lng}, ${url}
           )
           RETURNING id
+        ),
+        new_images AS (
+          INSERT INTO itinerary_images (item_id, sort_order, url)
+          SELECT new_item.id, m.sort_order, m.url
+          FROM new_item, jsonb_to_recordset(${imagesJson}::jsonb)
+            AS m (sort_order integer, url text)
         )
         INSERT INTO itinerary_costs (item_id, sort_order, item, cost)
         SELECT new_item.id, c.sort_order, c.item, c.cost
@@ -124,7 +148,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
           AS c (sort_order integer, item text, cost numeric)
       `;
     } else {
-      // One statement, so the stop and its replaced costs change together.
+      // One statement, so the stop and its replaced costs and photos change
+      // together.
       await sql`
         WITH updated AS (
           UPDATE itinerary_items SET
@@ -141,6 +166,16 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
         removed AS (
           DELETE FROM itinerary_costs
           WHERE item_id IN (SELECT id FROM updated)
+        ),
+        removed_images AS (
+          DELETE FROM itinerary_images
+          WHERE item_id IN (SELECT id FROM updated)
+        ),
+        new_images AS (
+          INSERT INTO itinerary_images (item_id, sort_order, url)
+          SELECT updated.id, m.sort_order, m.url
+          FROM updated, jsonb_to_recordset(${imagesJson}::jsonb)
+            AS m (sort_order integer, url text)
         )
         INSERT INTO itinerary_costs (item_id, sort_order, item, cost)
         SELECT updated.id, c.sort_order, c.item, c.cost

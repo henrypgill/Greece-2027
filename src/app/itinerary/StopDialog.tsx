@@ -19,6 +19,7 @@ import { CURRENCY_SYMBOL, type StopFormValues } from "@/data/itinerary";
 import { deleteStop, saveStop, type StopFormState } from "./actions";
 
 type CostRow = { key: number; item: string; cost: string };
+type ImageRow = { key: number; url: string };
 
 let nextKey = 0;
 const withKey = (c: { item: string; cost: string }): CostRow => ({
@@ -46,13 +47,16 @@ export default function StopDialog({
   const [costs, setCosts] = useState<CostRow[]>(() =>
     initialValues.costs.map(withKey),
   );
+  const [images, setImages] = useState<ImageRow[]>(() =>
+    initialValues.images.map((url) => ({ key: nextKey++, url })),
+  );
   const [state, setState] = useState<StopFormState>({});
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const busy = saving || deleting;
   const errors = state.errors ?? {};
 
-  const field = (name: keyof Omit<StopFormValues, "costs">) => ({
+  const field = (name: keyof Omit<StopFormValues, "costs" | "images">) => ({
     name,
     value: values[name],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -226,6 +230,81 @@ export default function StopDialog({
               sx={{ mt: 1 }}
             >
               Add cost
+            </Button>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle2">Photos</Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 1 }}
+            >
+              Links to images already online (e.g. right-click a picture and
+              copy its image address). Shown in this order.
+            </Typography>
+            <Stack spacing={1}>
+              {images.map((row) => (
+                <Stack
+                  key={row.key}
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      borderRadius: 1,
+                      bgcolor: "action.hover",
+                      backgroundImage: row.url
+                        ? `url("${row.url.replace(/"/g, "%22")}")`
+                        : undefined,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                  <TextField
+                    name="imageUrl"
+                    label="Image URL"
+                    size="small"
+                    type="url"
+                    value={row.url}
+                    onChange={(e) =>
+                      setImages((rows) =>
+                        rows.map((r) =>
+                          r.key === row.key ? { ...r, url: e.target.value } : r,
+                        ),
+                      )
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <IconButton
+                    aria-label="Remove photo"
+                    onClick={() =>
+                      setImages((rows) => rows.filter((r) => r.key !== row.key))
+                    }
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+              ))}
+            </Stack>
+            {errors.images && (
+              <Typography variant="caption" color="error">
+                {errors.images}
+              </Typography>
+            )}
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() =>
+                setImages((rows) => [...rows, { key: nextKey++, url: "" }])
+              }
+              sx={{ mt: 1 }}
+            >
+              Add photo
             </Button>
           </Box>
 
