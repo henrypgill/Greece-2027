@@ -102,16 +102,22 @@ export default function RouteMap({
         });
         map = mapInstance;
 
-        itinerary.forEach((item, index) => {
-          new mapboxgl.Marker({ element: createPinElement(index + 1) })
-            .setLngLat(toLngLat(item.location))
-            .setPopup(
-              new mapboxgl.Popup({ offset: PIN_SIZE / 2 + 4 }).setText(
-                `${index + 1}. ${item.title}`,
-              ),
-            )
-            .addTo(mapInstance);
-        });
+        // Later markers draw on top of earlier ones, so add them last-first:
+        // where pins overlap (e.g. a trip ending where it started), the
+        // lower number shows on top.
+        itinerary
+          .map((item, index) => ({ item, index }))
+          .reverse()
+          .forEach(({ item, index }) => {
+            new mapboxgl.Marker({ element: createPinElement(index + 1) })
+              .setLngLat(toLngLat(item.location))
+              .setPopup(
+                new mapboxgl.Popup({ offset: PIN_SIZE / 2 + 4 }).setText(
+                  `${index + 1}. ${item.title}`,
+                ),
+              )
+              .addTo(mapInstance);
+          });
 
         // One straight line per leg, with an arrowhead at its midpoint
         // pointing towards the next item.
