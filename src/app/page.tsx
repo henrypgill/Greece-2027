@@ -6,6 +6,7 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import TripCalendar from "@/components/TripCalendar";
+import TripWeather from "@/components/TripWeather";
 import {
   formatCost,
   formatDay,
@@ -73,6 +74,10 @@ export default async function HomePage() {
       <Divider />
 
       <TripDates itinerary={itinerary} />
+
+      <Divider />
+
+      <TripWeather />
     </Stack>
   );
 }
