@@ -91,7 +91,9 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
     `;
     // Starting values; never overwrites one that's been changed.
     await sql`
-      INSERT INTO settings (key, value) VALUES ('people_count', '10')
+      INSERT INTO settings (key, value) VALUES
+        ('people_count', '10'),
+        ('trip_description', 'A Greek island-hopping boat trip, July 2027.')
       ON CONFLICT (key) DO NOTHING
     `;
   })().catch((error) => {
