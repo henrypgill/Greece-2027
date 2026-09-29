@@ -1,4 +1,8 @@
-import type { CostItem, ItineraryItem } from "@/data/itinerary";
+import {
+  TRIP_TIME_ZONE,
+  type CostItem,
+  type ItineraryItem,
+} from "@/data/itinerary";
 import { ITINERARY_SEED } from "@/data/itinerary-seed";
 import { db } from "@/lib/db";
 
@@ -13,7 +17,7 @@ let seeded: Promise<void> | undefined;
  * `seeds` and inserting the items and costs all happen together, and a second
  * server instance racing it finds the name already claimed and inserts nothing.
  */
-function ensureSeeded(): Promise<void> {
+export function ensureSeeded(): Promise<void> {
   seeded ??= (async () => {
     const sql = await db();
     const items = ITINERARY_SEED.map((item, index) => ({
@@ -79,7 +83,7 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
   const sql = await db();
   const rows = await sql`
     SELECT
-      i.title, i.start_at, i.end_at, i.description, i.lat, i.lng,
+      i.id, i.title, i.start_at, i.end_at, i.description, i.lat, i.lng,
       i.google_maps_url,
       COALESCE(
         json_agg(
@@ -94,6 +98,7 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
     ORDER BY i.sort_order, i.id
   `;
   return rows.map((row) => ({
+    id: Number(row.id),
     title: row.title as string,
     start: toIso(row.start_at),
     end: toIso(row.end_at),
@@ -116,4 +121,68 @@ export async function loadItinerary(): Promise<ItineraryItem[] | null> {
     console.error("getItinerary failed", error);
     return null;
   }
+}
+
+/** A stop as the edit form needs it: times as Greek local "YYYY-MM-DDTHH:mm". */
+export type StopFormValues = {
+  title: string;
+  start: string;
+  end: string;
+  description: string;
+  lat: string;
+  lng: string;
+  googleMapsUrl: string;
+  costs: { item: string; cost: string }[];
+};
+
+export const EMPTY_STOP: StopFormValues = {
+  title: "",
+  start: "",
+  end: "",
+  description: "",
+  lat: "",
+  lng: "",
+  googleMapsUrl: "",
+  costs: [],
+};
+
+/** One stop for the edit form, or null if there's no stop with that id. */
+export async function getStopForEdit(
+  id: number,
+): Promise<StopFormValues | null> {
+  await ensureSeeded();
+  const sql = await db();
+  const rows = await sql`
+    SELECT
+      i.title, i.description, i.lat, i.lng, i.google_maps_url,
+      to_char(i.start_at AT TIME ZONE ${TRIP_TIME_ZONE}, 'YYYY-MM-DD"T"HH24:MI')
+        AS start_local,
+      to_char(i.end_at AT TIME ZONE ${TRIP_TIME_ZONE}, 'YYYY-MM-DD"T"HH24:MI')
+        AS end_local,
+      COALESCE(
+        json_agg(
+          json_build_object('item', c.item, 'cost', c.cost)
+          ORDER BY c.sort_order, c.id
+        ) FILTER (WHERE c.id IS NOT NULL),
+        '[]'
+      ) AS costs
+    FROM itinerary_items i
+    LEFT JOIN itinerary_costs c ON c.item_id = i.id
+    WHERE i.id = ${id}
+    GROUP BY i.id
+  `;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    title: row.title as string,
+    start: row.start_local as string,
+    end: row.end_local as string,
+    description: row.description as string,
+    lat: String(row.lat),
+    lng: String(row.lng),
+    googleMapsUrl: (row.google_maps_url as string | null) ?? "",
+    costs: (row.costs as { item: string; cost: string | number }[]).map(
+      (c) => ({ item: c.item, cost: String(Number(c.cost)) }),
+    ),
+  };
 }

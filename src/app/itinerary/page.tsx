@@ -7,7 +7,9 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditIcon from "@mui/icons-material/Edit";
 import MapIcon from "@mui/icons-material/Map";
+import Link from "next/link";
 import Markdown from "react-markdown";
 import { connection } from "next/server";
 import Alert from "@mui/material/Alert";
@@ -28,12 +30,24 @@ export default async function ItineraryPage() {
 
   return (
     <Box>
+      <Stack
+        direction="row"
+        sx={{ justifyContent: "flex-end", px: 1, py: 0.5 }}
+      >
+        <Button
+          component={Link}
+          href="/itinerary/edit"
+          startIcon={<EditIcon />}
+        >
+          Edit itinerary
+        </Button>
+      </Stack>
       {itinerary.map((item, index) => {
         const number = index + 1;
         const nextLeg = legs[index];
 
         return (
-          <Accordion key={index} disableGutters square>
+          <Accordion key={item.id} disableGutters square>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack
                 direction="row"
@@ -83,6 +97,16 @@ export default async function ItineraryPage() {
                     Open in Google Maps
                   </Button>
                 )}
+
+                <Button
+                  component={Link}
+                  href={`/itinerary/edit/${item.id}`}
+                  size="small"
+                  startIcon={<EditIcon />}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  Edit this stop
+                </Button>
 
                 {nextLeg && (
                   <Typography variant="caption" color="text.secondary">
