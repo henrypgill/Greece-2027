@@ -6,9 +6,10 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import MapIcon from "@mui/icons-material/Map";
-import PowerIcon from "@mui/icons-material/Power";
 import ImageCarousel from "@/components/ImageCarousel";
+import StopTypeDot from "@/components/StopTypeDot";
 import {
+  STOP_TYPES,
   formatDateTime,
   formatDuration,
   type ItineraryItem,
@@ -45,11 +46,32 @@ export default function StopDetails({
         {timesAction}
       </Stack>
 
-      {item.shorePower && (
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-          <PowerIcon fontSize="small" color="primary" />
-          <Typography variant="body2">Will have shore power</Typography>
-        </Stack>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        <StopTypeDot type={item.stopType} />
+        <Typography variant="body2">
+          {STOP_TYPES[item.stopType].label}
+        </Typography>
+      </Stack>
+
+      {/* Only admins' pages load admin notes at all. */}
+      {item.adminNotes && (
+        <Box
+          sx={{
+            borderLeft: 3,
+            borderColor: "warning.main",
+            bgcolor: "action.hover",
+            px: 1.5,
+            py: 1,
+            borderRadius: 1,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            Admin notes (only admins see these)
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
+            {item.adminNotes}
+          </Typography>
+        </Box>
       )}
 
       {item.images.length > 0 && (

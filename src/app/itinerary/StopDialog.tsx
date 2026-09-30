@@ -11,13 +11,20 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
+import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import { CURRENCY_SYMBOL, type StopFormValues } from "@/data/itinerary";
+import StopTypeDot from "@/components/StopTypeDot";
+import {
+  CURRENCY_SYMBOL,
+  STOP_TYPE_KEYS,
+  STOP_TYPES,
+  type StopFormValues,
+} from "@/data/itinerary";
 import { deleteStop, saveStop, type StopFormState } from "./actions";
 
 type CostRow = {
@@ -63,9 +70,7 @@ export default function StopDialog({
   const busy = saving || deleting;
   const errors = state.errors ?? {};
 
-  const field = (
-    name: keyof Omit<StopFormValues, "costs" | "images" | "shorePower">,
-  ) => ({
+  const field = (name: keyof Omit<StopFormValues, "costs" | "images">) => ({
     name,
     value: values[name],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -177,18 +182,20 @@ export default function StopDialog({
             {...field("googleMapsUrl")}
           />
 
-          <FormControlLabel
-            control={
-              <Switch
-                name="shorePower"
-                checked={values.shorePower}
-                onChange={(e) =>
-                  setValues((v) => ({ ...v, shorePower: e.target.checked }))
-                }
-              />
-            }
-            label="Will have shore power"
-          />
+          <TextField select label="Type" {...field("stopType")}>
+            {STOP_TYPE_KEYS.map((key) => (
+              <MenuItem key={key} value={key}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <StopTypeDot type={key} />
+                  <span>{STOP_TYPES[key].label}</span>
+                </Stack>
+              </MenuItem>
+            ))}
+          </TextField>
 
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -362,6 +369,14 @@ export default function StopDialog({
               Add photo
             </Button>
           </Box>
+
+          <TextField
+            label="Admin notes"
+            multiline
+            minRows={2}
+            {...field("adminNotes")}
+            helperText={errors.adminNotes ?? "Only admins can see these."}
+          />
 
           {state.message && <Alert severity="error">{state.message}</Alert>}
         </Stack>

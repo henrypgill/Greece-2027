@@ -6,10 +6,9 @@ import ItineraryList from "./ItineraryList";
 
 export default async function ItineraryPage() {
   await connection(); // read fresh from the database on every request
-  const [itinerary, isAdmin] = await Promise.all([
-    loadItinerary(),
-    isAdminSession(),
-  ]);
+  const isAdmin = await isAdminSession();
+  // Admin notes are only loaded (and so only sent to the browser) for admins.
+  const itinerary = await loadItinerary({ includeAdminNotes: isAdmin });
   if (!itinerary) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>

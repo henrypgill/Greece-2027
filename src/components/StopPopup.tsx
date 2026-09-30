@@ -9,7 +9,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import StopDetails from "@/components/StopDetails";
-import { getLegs, type ItineraryItem } from "@/data/itinerary";
+import { STOP_TYPES, getLegs, type ItineraryItem } from "@/data/itinerary";
 
 /**
  * Full-screen details of one stop (everything but its costs), opened by
@@ -53,7 +53,8 @@ export default function StopPopup({
                   width: 28,
                   height: 28,
                   fontSize: 14,
-                  bgcolor: "primary.main",
+                  bgcolor: STOP_TYPES[item.stopType].color,
+                  color: STOP_TYPES[item.stopType].textColor,
                 }}
               >
                 {index + 1}
