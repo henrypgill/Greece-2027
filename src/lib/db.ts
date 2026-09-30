@@ -82,6 +82,11 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
         cost numeric(10, 2) NOT NULL
       )
     `;
+    // Whether the boat can plug in at this stop. Added after the table existed.
+    await sql`
+      ALTER TABLE itinerary_items
+      ADD COLUMN IF NOT EXISTS shore_power boolean NOT NULL DEFAULT false
+    `;
     // Photo URLs for each stop, shown as a carousel (links to images hosted
     // elsewhere; nothing is uploaded).
     await sql`

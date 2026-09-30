@@ -80,7 +80,7 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
   const rows = await sql`
     SELECT
       i.id, i.title, i.start_at, i.end_at, i.description, i.lat, i.lng,
-      i.google_maps_url,
+      i.google_maps_url, i.shore_power,
       COALESCE(
         (
           SELECT json_agg(
@@ -115,6 +115,7 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
       (c): CostItem => ({ item: c.item, cost: Number(c.cost) }),
     ),
     images: row.images as string[],
+    shorePower: row.shore_power === true,
   }));
 }
 
