@@ -9,7 +9,12 @@ import { ensureTripCostsSeeded } from "@/lib/trip-costs-db";
 // Admin only. Arguments arrive from the client, so they're checked here too.
 
 export type TripCostResult =
-  { ok: true } | { ok: false; message: string; field?: "item" | "cost" };
+  | { ok: true }
+  | {
+      ok: false;
+      message: string;
+      field?: "item" | "cost" | "description";
+    };
 
 const NOT_ADMIN = "Only admins can do this. Log in with the admin password.";
 
@@ -19,6 +24,7 @@ export async function saveTripCost(
   rawItem: string,
   rawCost: string,
   rawPerPerson: boolean,
+  rawDescription: string,
 ): Promise<TripCostResult> {
   if (!(await isAdminSession())) return { ok: false, message: NOT_ADMIN };
   if (id !== "new" && !Number.isInteger(id)) {
@@ -47,22 +53,32 @@ export async function saveTripCost(
   }
   const amount = Math.round(cost * 100) / 100;
   const perPerson = rawPerPerson === true;
+  const description =
+    typeof rawDescription === "string" ? rawDescription.trim() : "";
+  if (description.length > 1000) {
+    return {
+      ok: false,
+      field: "description",
+      message: "Keep it under 1,000 characters.",
+    };
+  }
 
   try {
     await ensureTripCostsSeeded();
     const sql = await db();
     if (id === "new") {
       await sql`
-        INSERT INTO trip_costs (sort_order, item, cost, per_person)
+        INSERT INTO trip_costs (sort_order, item, cost, per_person, description)
         VALUES (
           (SELECT COALESCE(MAX(sort_order), 0) + 10 FROM trip_costs),
-          ${item}, ${amount}, ${perPerson}
+          ${item}, ${amount}, ${perPerson}, ${description}
         )
       `;
     } else {
       await sql`
         UPDATE trip_costs
-        SET item = ${item}, cost = ${amount}, per_person = ${perPerson}
+        SET item = ${item}, cost = ${amount}, per_person = ${perPerson},
+          description = ${description}
         WHERE id = ${id}
       `;
     }

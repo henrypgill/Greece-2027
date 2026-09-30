@@ -34,6 +34,7 @@ type Editing = {
   item: string;
   cost: string;
   perPerson: boolean;
+  description: string;
 } | null;
 
 /** The "Overall trip costs" table; admins can add, edit and delete rows. */
@@ -62,7 +63,13 @@ export default function TripCosts({
             size="small"
             startIcon={<AddIcon />}
             onClick={() =>
-              setEditing({ id: "new", item: "", cost: "", perPerson: false })
+              setEditing({
+                id: "new",
+                item: "",
+                cost: "",
+                perPerson: false,
+                description: "",
+              })
             }
           >
             Add cost
@@ -74,7 +81,18 @@ export default function TripCosts({
         <TableBody>
           {costs.map((c) => (
             <TableRow key={c.id}>
-              <TableCell sx={{ pl: 0 }}>{c.item}</TableCell>
+              <TableCell sx={{ pl: 0 }}>
+                {c.item}
+                {c.description && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", whiteSpace: "pre-line" }}
+                  >
+                    {c.description}
+                  </Typography>
+                )}
+              </TableCell>
               <TableCell align="right" sx={{ pr: isAdmin ? 1 : 0 }}>
                 {formatCost(c.cost)}
                 <Typography
@@ -96,6 +114,7 @@ export default function TripCosts({
                         item: c.item,
                         cost: String(c.cost),
                         perPerson: c.perPerson,
+                        description: c.description,
                       })
                     }
                   >
@@ -141,6 +160,7 @@ function TripCostDialog({
   const [item, setItem] = useState(initial.item);
   const [cost, setCost] = useState(initial.cost);
   const [perPerson, setPerPerson] = useState(initial.perPerson);
+  const [description, setDescription] = useState(initial.description);
   const [result, setResult] = useState<TripCostResult | null>(null);
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
@@ -167,7 +187,10 @@ function TripCostDialog({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    run(() => saveTripCost(initial.id, item, cost, perPerson), startSaving);
+    run(
+      () => saveTripCost(initial.id, item, cost, perPerson, description),
+      startSaving,
+    );
   }
 
   function handleDelete() {
@@ -223,6 +246,18 @@ function TripCostDialog({
                 ),
               },
             }}
+          />
+          <TextField
+            label="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            multiline
+            minRows={2}
+            error={error?.field === "description"}
+            helperText={
+              error?.field === "description" ? error.message : undefined
+            }
+            slotProps={{ htmlInput: { maxLength: 1000 } }}
           />
           <FormControlLabel
             control={

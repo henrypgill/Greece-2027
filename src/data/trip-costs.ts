@@ -6,8 +6,8 @@ import type { CostItem } from "@/data/itinerary";
 // src/data/itinerary.ts (costPerPerson, costForGroup), shared with the
 // itinerary stops' costs.
 
-/** An overall trip cost, with its database id. */
-export type TripCost = CostItem & { id: number };
+/** An overall trip cost, with its database id and an optional description. */
+export type TripCost = CostItem & { id: number; description: string };
 
 /**
  * What the trip_costs table was first filled with (see trip-costs-db.ts).

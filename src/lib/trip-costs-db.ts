@@ -53,7 +53,7 @@ export async function getTripCosts(): Promise<TripCost[]> {
   await ensureTripCostsSeeded();
   const sql = await db();
   const rows = await sql`
-    SELECT id, item, cost, per_person FROM trip_costs
+    SELECT id, item, cost, per_person, description FROM trip_costs
     ORDER BY sort_order, id
   `;
   return rows.map((row) => ({
@@ -61,6 +61,7 @@ export async function getTripCosts(): Promise<TripCost[]> {
     item: row.item as string,
     cost: Number(row.cost),
     perPerson: row.per_person === true,
+    description: row.description as string,
   }));
 }
 
