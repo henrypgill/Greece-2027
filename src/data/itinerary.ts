@@ -39,6 +39,8 @@ export type ItineraryItem = {
   costs: CostItem[];
   /** Photo URLs, in order, shown as a carousel. */
   images: string[];
+  /** Whether the boat will have shore power (can plug in) at this stop. */
+  shorePower: boolean;
 };
 
 export const CURRENCY = "GBP";
@@ -175,6 +177,7 @@ export type StopFormValues = {
   googleMapsUrl: string;
   costs: { item: string; cost: string }[];
   images: string[];
+  shorePower: boolean;
 };
 
 export const EMPTY_STOP: StopFormValues = {
@@ -187,6 +190,7 @@ export const EMPTY_STOP: StopFormValues = {
   googleMapsUrl: "",
   costs: [],
   images: [],
+  shorePower: false,
 };
 
 const localInputFormat = new Intl.DateTimeFormat("en-GB", {
@@ -220,5 +224,6 @@ export function toStopFormValues(item: ItineraryItem): StopFormValues {
     googleMapsUrl: item.googleMapsUrl ?? "",
     costs: item.costs.map((c) => ({ item: c.item, cost: String(c.cost) })),
     images: item.images,
+    shorePower: item.shorePower,
   };
 }

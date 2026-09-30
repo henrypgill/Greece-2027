@@ -6,6 +6,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import MapIcon from "@mui/icons-material/Map";
+import PowerIcon from "@mui/icons-material/Power";
 import ImageCarousel from "@/components/ImageCarousel";
 import {
   formatDateTime,
@@ -43,6 +44,13 @@ export default function StopDetails({
         </Typography>
         {timesAction}
       </Stack>
+
+      {item.shorePower && (
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+          <PowerIcon fontSize="small" color="primary" />
+          <Typography variant="body2">Will have shore power</Typography>
+        </Stack>
+      )}
 
       {item.images.length > 0 && (
         <ImageCarousel images={item.images} title={item.title} />
