@@ -66,6 +66,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
     .filter(Boolean);
   const costItems = formData.getAll("costItem").map(String);
   const costAmounts = formData.getAll("costAmount").map(String);
+  // One "1"/"0" per cost row (hidden inputs), so they line up with the rows.
+  const costPerPerson = formData.getAll("costPerPerson").map(String);
 
   const errors: StopFormState["errors"] = {};
   if (!title) errors.title = "Required.";
@@ -83,7 +85,12 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
     errors.googleMapsUrl = "Should start with https://";
   }
 
-  const costs: { sort_order: number; item: string; cost: number }[] = [];
+  const costs: {
+    sort_order: number;
+    item: string;
+    cost: number;
+    per_person: boolean;
+  }[] = [];
   costItems.forEach((rawItem, i) => {
     const item = rawItem.trim();
     const rawAmount = (costAmounts[i] ?? "").trim();
@@ -97,6 +104,7 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
       sort_order: costs.length,
       item,
       cost: Math.round(cost * 100) / 100,
+      per_person: costPerPerson[i] === "1",
     });
   });
 
@@ -144,10 +152,10 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
           FROM new_item, jsonb_to_recordset(${imagesJson}::jsonb)
             AS m (sort_order integer, url text)
         )
-        INSERT INTO itinerary_costs (item_id, sort_order, item, cost)
-        SELECT new_item.id, c.sort_order, c.item, c.cost
+        INSERT INTO itinerary_costs (item_id, sort_order, item, cost, per_person)
+        SELECT new_item.id, c.sort_order, c.item, c.cost, c.per_person
         FROM new_item, jsonb_to_recordset(${costsJson}::jsonb)
-          AS c (sort_order integer, item text, cost numeric)
+          AS c (sort_order integer, item text, cost numeric, per_person boolean)
       `;
     } else {
       // One statement, so the stop and its replaced costs and photos change
@@ -180,10 +188,10 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
           FROM updated, jsonb_to_recordset(${imagesJson}::jsonb)
             AS m (sort_order integer, url text)
         )
-        INSERT INTO itinerary_costs (item_id, sort_order, item, cost)
-        SELECT updated.id, c.sort_order, c.item, c.cost
+        INSERT INTO itinerary_costs (item_id, sort_order, item, cost, per_person)
+        SELECT updated.id, c.sort_order, c.item, c.cost, c.per_person
         FROM updated, jsonb_to_recordset(${costsJson}::jsonb)
-          AS c (sort_order integer, item text, cost numeric)
+          AS c (sort_order integer, item text, cost numeric, per_person boolean)
       `;
     }
   } catch (error) {

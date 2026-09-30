@@ -20,8 +20,13 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
-import { CURRENCY_SYMBOL, formatCost } from "@/data/itinerary";
-import { tripCostsForGroup, type TripCost } from "@/data/trip-costs";
+import {
+  CURRENCY_SYMBOL,
+  costForGroup,
+  costShareLabel,
+  formatCost,
+} from "@/data/itinerary";
+import type { TripCost } from "@/data/trip-costs";
 import { deleteTripCost, saveTripCost, type TripCostResult } from "./actions";
 
 type Editing = {
@@ -77,7 +82,7 @@ export default function TripCosts({
                   color="text.secondary"
                   sx={{ display: "block" }}
                 >
-                  {c.perPerson ? "per person" : "shared"}
+                  {costShareLabel(c, peopleCount)}
                 </Typography>
               </TableCell>
               {isAdmin && (
@@ -108,7 +113,7 @@ export default function TripCosts({
               align="right"
               sx={{ pr: isAdmin ? 1 : 0, fontWeight: 500, border: 0 }}
             >
-              {formatCost(tripCostsForGroup(costs, peopleCount))}
+              {formatCost(costForGroup(costs, peopleCount))}
             </TableCell>
             {isAdmin && <TableCell sx={{ border: 0 }} />}
           </TableRow>
