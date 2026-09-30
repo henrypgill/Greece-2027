@@ -58,6 +58,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
   const lat = Number(text(formData, "lat"));
   const lng = Number(text(formData, "lng"));
   const googleMapsUrl = text(formData, "googleMapsUrl");
+  // A checkbox: sent as "on" when ticked, left out when not.
+  const shorePower = formData.get("shorePower") === "on";
   const imageUrls = formData
     .getAll("imageUrl")
     .map((u) => String(u).trim())
@@ -125,14 +127,14 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
         WITH new_item AS (
           INSERT INTO itinerary_items (
             sort_order, title, start_at, end_at, description, lat, lng,
-            google_maps_url
+            google_maps_url, shore_power
           )
           VALUES (
             (SELECT COALESCE(MAX(sort_order), 0) + 10 FROM itinerary_items),
             ${title},
             ${start}::timestamp AT TIME ZONE ${TRIP_TIME_ZONE},
             ${end}::timestamp AT TIME ZONE ${TRIP_TIME_ZONE},
-            ${description}, ${lat}, ${lng}, ${url}
+            ${description}, ${lat}, ${lng}, ${url}, ${shorePower}
           )
           RETURNING id
         ),
@@ -159,7 +161,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
             description = ${description},
             lat = ${lat},
             lng = ${lng},
-            google_maps_url = ${url}
+            google_maps_url = ${url},
+            shore_power = ${shorePower}
           WHERE id = ${id}
           RETURNING id
         ),
