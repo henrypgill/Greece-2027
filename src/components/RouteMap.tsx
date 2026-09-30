@@ -16,18 +16,20 @@ import theme from "@/theme";
 
 const PIN_SIZE = 28;
 const ROUTE_COLOR = theme.palette.primary.main;
+/** Pins for stops where we'll have shore power. */
+const SHORE_POWER_COLOR = theme.palette.success.main;
 
 const toLngLat = ({ lng, lat }: GeoLocation): [number, number] => [lng, lat];
 
-/** A round, numbered map pin. */
-function createPinElement(number: number): HTMLDivElement {
+/** A round, numbered map pin; green where we'll have shore power. */
+function createPinElement(number: number, shorePower: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.textContent = String(number);
   Object.assign(el.style, {
     width: `${PIN_SIZE}px`,
     height: `${PIN_SIZE}px`,
     borderRadius: "50%",
-    background: ROUTE_COLOR,
+    background: shorePower ? SHORE_POWER_COLOR : ROUTE_COLOR,
     color: "#fff",
     border: "2px solid #fff",
     boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
@@ -115,7 +117,7 @@ export default function RouteMap({
           .map((item, index) => ({ item, index }))
           .reverse()
           .forEach(({ item, index }) => {
-            const pin = createPinElement(index + 1);
+            const pin = createPinElement(index + 1, item.shorePower);
             pin.setAttribute("role", "button");
             pin.setAttribute("aria-label", `${index + 1}. ${item.title}`);
             pin.addEventListener("click", () => setSelected(index));
@@ -207,6 +209,36 @@ export default function RouteMap({
             The map couldn&apos;t be loaded. Check the Mapbox token and try
             again.
           </Typography>
+        </Box>
+      )}
+
+      {itinerary.some((item) => item.shorePower) && !failed && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: 8,
+            bottom: 32,
+            display: "flex",
+            alignItems: "center",
+            gap: 0.75,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            bgcolor: "rgba(255,255,255,0.9)",
+            boxShadow: 1,
+            pointerEvents: "none",
+          }}
+        >
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              bgcolor: "success.main",
+              border: "1px solid #fff",
+            }}
+          />
+          <Typography variant="caption">Shore power</Typography>
         </Box>
       )}
 
