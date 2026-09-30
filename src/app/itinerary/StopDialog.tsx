@@ -5,12 +5,14 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
@@ -56,7 +58,9 @@ export default function StopDialog({
   const busy = saving || deleting;
   const errors = state.errors ?? {};
 
-  const field = (name: keyof Omit<StopFormValues, "costs" | "images">) => ({
+  const field = (
+    name: keyof Omit<StopFormValues, "costs" | "images" | "shorePower">,
+  ) => ({
     name,
     value: values[name],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -166,6 +170,19 @@ export default function StopDialog({
             label="Google Maps link"
             type="url"
             {...field("googleMapsUrl")}
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                name="shorePower"
+                checked={values.shorePower}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, shorePower: e.target.checked }))
+                }
+              />
+            }
+            label="Will have shore power"
           />
 
           <Box>

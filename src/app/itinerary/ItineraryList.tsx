@@ -37,6 +37,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import EditIcon from "@mui/icons-material/Edit";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import PowerIcon from "@mui/icons-material/Power";
 import StopDetails from "@/components/StopDetails";
 import {
   EMPTY_STOP,
@@ -277,6 +278,13 @@ function RowContent({
             {number}
           </Avatar>
           <Typography sx={{ fontWeight: 500 }}>{item.title}</Typography>
+          {item.shorePower && (
+            <PowerIcon
+              fontSize="small"
+              color="action"
+              titleAccess="Will have shore power"
+            />
+          )}
         </Stack>
       </AccordionSummary>
 
