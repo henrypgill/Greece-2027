@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { TRIP_TIME_ZONE } from "@/data/itinerary";
+import { TRIP_TIME_ZONE, isStopType } from "@/data/itinerary";
 import { db } from "@/lib/db";
 import { ensureSeeded } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
@@ -14,7 +14,9 @@ type Field =
   | "lng"
   | "googleMapsUrl"
   | "costs"
-  | "images";
+  | "images"
+  | "stopType"
+  | "adminNotes";
 
 export type StopFormState = {
   ok?: boolean;
@@ -58,8 +60,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
   const lat = Number(text(formData, "lat"));
   const lng = Number(text(formData, "lng"));
   const googleMapsUrl = text(formData, "googleMapsUrl");
-  // A checkbox: sent as "on" when ticked, left out when not.
-  const shorePower = formData.get("shorePower") === "on";
+  const stopType = text(formData, "stopType");
+  const adminNotes = text(formData, "adminNotes");
   const imageUrls = formData
     .getAll("imageUrl")
     .map((u) => String(u).trim())
@@ -83,6 +85,10 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
   }
   if (googleMapsUrl && !/^https?:\/\//i.test(googleMapsUrl)) {
     errors.googleMapsUrl = "Should start with https://";
+  }
+  if (!isStopType(stopType)) errors.stopType = "Pick a type.";
+  if (adminNotes.length > 5000) {
+    errors.adminNotes = "Keep it under 5,000 characters.";
   }
 
   const costs: {
@@ -135,14 +141,14 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
         WITH new_item AS (
           INSERT INTO itinerary_items (
             sort_order, title, start_at, end_at, description, lat, lng,
-            google_maps_url, shore_power
+            google_maps_url, stop_type, admin_notes
           )
           VALUES (
             (SELECT COALESCE(MAX(sort_order), 0) + 10 FROM itinerary_items),
             ${title},
             ${start}::timestamp AT TIME ZONE ${TRIP_TIME_ZONE},
             ${end}::timestamp AT TIME ZONE ${TRIP_TIME_ZONE},
-            ${description}, ${lat}, ${lng}, ${url}, ${shorePower}
+            ${description}, ${lat}, ${lng}, ${url}, ${stopType}, ${adminNotes}
           )
           RETURNING id
         ),
@@ -170,7 +176,8 @@ export async function saveStop(formData: FormData): Promise<StopFormState> {
             lat = ${lat},
             lng = ${lng},
             google_maps_url = ${url},
-            shore_power = ${shorePower}
+            stop_type = ${stopType},
+            admin_notes = ${adminNotes}
           WHERE id = ${id}
           RETURNING id
         ),

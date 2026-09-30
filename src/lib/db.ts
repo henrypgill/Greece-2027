@@ -93,6 +93,33 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
       ALTER TABLE itinerary_items
       ADD COLUMN IF NOT EXISTS shore_power boolean NOT NULL DEFAULT false
     `;
+    // What kind of stop (a key of STOP_TYPES in src/data/itinerary.ts) and
+    // notes only admins see. Both added after the table existed; stop_type
+    // replaced the older shore_power column, which is no longer used.
+    await sql`
+      ALTER TABLE itinerary_items
+      ADD COLUMN IF NOT EXISTS stop_type text NOT NULL DEFAULT 'docked'
+    `;
+    await sql`
+      ALTER TABLE itinerary_items
+      ADD COLUMN IF NOT EXISTS admin_notes text NOT NULL DEFAULT ''
+    `;
+    // One-off: give existing stops a type from what was known about them
+    // (shore power, or "anchor" / "swim" in the title); the rest stay docked.
+    await sql`
+      WITH claimed AS (
+        INSERT INTO seeds (name) VALUES ('stop-types-v1')
+        ON CONFLICT DO NOTHING
+        RETURNING name
+      )
+      UPDATE itinerary_items SET stop_type = CASE
+        WHEN shore_power THEN 'docked_power'
+        WHEN title ILIKE '%swim%' THEN 'swim'
+        WHEN title ILIKE '%anchor%' THEN 'anchor'
+        ELSE 'docked'
+      END
+      WHERE EXISTS (SELECT 1 FROM claimed)
+    `;
     // Photo URLs for each stop, shown as a carousel (links to images hosted
     // elsewhere; nothing is uploaded).
     await sql`
