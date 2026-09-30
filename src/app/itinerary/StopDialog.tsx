@@ -20,11 +20,16 @@ import CloseIcon from "@mui/icons-material/Close";
 import { CURRENCY_SYMBOL, type StopFormValues } from "@/data/itinerary";
 import { deleteStop, saveStop, type StopFormState } from "./actions";
 
-type CostRow = { key: number; item: string; cost: string };
+type CostRow = {
+  key: number;
+  item: string;
+  cost: string;
+  perPerson: boolean;
+};
 type ImageRow = { key: number; url: string };
 
 let nextKey = 0;
-const withKey = (c: { item: string; cost: string }): CostRow => ({
+const withKey = (c: Omit<CostRow, "key">): CostRow => ({
   key: nextKey++,
   ...c,
 });
@@ -191,46 +196,76 @@ export default function StopDialog({
             </Typography>
             <Stack spacing={1}>
               {costs.map((row) => (
-                <Stack key={row.key} direction="row" spacing={1}>
-                  <TextField
-                    name="costItem"
-                    label="What"
-                    size="small"
-                    value={row.item}
-                    onChange={(e) =>
-                      updateCost(row.key, { item: e.target.value })
-                    }
-                    sx={{ flex: 2 }}
+                <Box key={row.key}>
+                  <Stack direction="row" spacing={1}>
+                    <TextField
+                      name="costItem"
+                      label="What"
+                      size="small"
+                      value={row.item}
+                      onChange={(e) =>
+                        updateCost(row.key, { item: e.target.value })
+                      }
+                      sx={{ flex: 2 }}
+                    />
+                    <TextField
+                      name="costAmount"
+                      label="Amount"
+                      size="small"
+                      value={row.cost}
+                      onChange={(e) =>
+                        updateCost(row.key, { cost: e.target.value })
+                      }
+                      sx={{ flex: 1 }}
+                      slotProps={{
+                        htmlInput: { inputMode: "decimal" },
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              {CURRENCY_SYMBOL}
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    />
+                    <IconButton
+                      aria-label="Remove cost"
+                      onClick={() =>
+                        setCosts((rows) =>
+                          rows.filter((r) => r.key !== row.key),
+                        )
+                      }
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                  {/* The switch has no name; this hidden input sends "1"/"0"
+                    for every row so the values line up with the rows. */}
+                  <input
+                    type="hidden"
+                    name="costPerPerson"
+                    value={row.perPerson ? "1" : "0"}
                   />
-                  <TextField
-                    name="costAmount"
-                    label="Amount"
-                    size="small"
-                    value={row.cost}
-                    onChange={(e) =>
-                      updateCost(row.key, { cost: e.target.value })
+                  <FormControlLabel
+                    sx={{ ml: 0 }}
+                    control={
+                      <Switch
+                        size="small"
+                        checked={row.perPerson}
+                        onChange={(e) =>
+                          updateCost(row.key, { perPerson: e.target.checked })
+                        }
+                      />
                     }
-                    sx={{ flex: 1 }}
-                    slotProps={{
-                      htmlInput: { inputMode: "decimal" },
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            {CURRENCY_SYMBOL}
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
+                    label={
+                      <Typography variant="caption" color="text.secondary">
+                        {row.perPerson
+                          ? "Per person: everyone pays this"
+                          : "Shared: split between everyone"}
+                      </Typography>
+                    }
                   />
-                  <IconButton
-                    aria-label="Remove cost"
-                    onClick={() =>
-                      setCosts((rows) => rows.filter((r) => r.key !== row.key))
-                    }
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
+                </Box>
               ))}
             </Stack>
             {errors.costs && (
@@ -242,7 +277,10 @@ export default function StopDialog({
               size="small"
               startIcon={<AddIcon />}
               onClick={() =>
-                setCosts((rows) => [...rows, withKey({ item: "", cost: "" })])
+                setCosts((rows) => [
+                  ...rows,
+                  withKey({ item: "", cost: "", perPerson: false }),
+                ])
               }
               sx={{ mt: 1 }}
             >
