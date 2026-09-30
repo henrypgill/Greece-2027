@@ -44,9 +44,40 @@ export type ItineraryItem = {
   costs: CostItem[];
   /** Photo URLs, in order, shown as a carousel. */
   images: string[];
-  /** Whether the boat will have shore power (can plug in) at this stop. */
-  shorePower: boolean;
+  /** What kind of stop it is; sets its colour on the map and list. */
+  stopType: StopType;
+  /**
+   * Free-text notes only admins see. Only loaded for admins (see
+   * `getItinerary`); undefined for everyone else, so it never reaches their
+   * browser.
+   */
+  adminNotes?: string;
 };
+
+/** The kinds of stop, with how they're shown. Keys are stored in the DB. */
+export const STOP_TYPES = {
+  docked_power: {
+    label: "Docked (shore power)",
+    color: "#2e7d32", // green
+    textColor: "#fff",
+  },
+  docked: {
+    label: "Docked (no shore power)",
+    color: "#d32f2f", // red
+    textColor: "#fff",
+  },
+  anchor: { label: "At anchor", color: "#7b1fa2", textColor: "#fff" }, // purple
+  buoy: { label: "Mooring buoy", color: "#fbc02d", textColor: "#000" }, // yellow
+  swim: { label: "Swim stop", color: "#ef6c00", textColor: "#fff" }, // orange
+} as const;
+
+export type StopType = keyof typeof STOP_TYPES;
+
+export const STOP_TYPE_KEYS = Object.keys(STOP_TYPES) as StopType[];
+
+export function isStopType(value: unknown): value is StopType {
+  return typeof value === "string" && Object.hasOwn(STOP_TYPES, value);
+}
 
 export const CURRENCY = "GBP";
 /** Shown in front of amount inputs; keep in step with CURRENCY. */
@@ -200,7 +231,8 @@ export type StopFormValues = {
   googleMapsUrl: string;
   costs: { item: string; cost: string; perPerson: boolean }[];
   images: string[];
-  shorePower: boolean;
+  stopType: StopType;
+  adminNotes: string;
 };
 
 export const EMPTY_STOP: StopFormValues = {
@@ -213,7 +245,8 @@ export const EMPTY_STOP: StopFormValues = {
   googleMapsUrl: "",
   costs: [],
   images: [],
-  shorePower: false,
+  stopType: "docked",
+  adminNotes: "",
 };
 
 const localInputFormat = new Intl.DateTimeFormat("en-GB", {
@@ -251,6 +284,7 @@ export function toStopFormValues(item: ItineraryItem): StopFormValues {
       perPerson: c.perPerson,
     })),
     images: item.images,
-    shorePower: item.shorePower,
+    stopType: item.stopType,
+    adminNotes: item.adminNotes ?? "",
   };
 }

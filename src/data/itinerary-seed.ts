@@ -8,7 +8,7 @@ import type { ItineraryItem } from "@/data/itinerary";
 // Times marked "placeholder" (and all end times) were guesses to be firmed up.
 export const ITINERARY_SEED: Omit<
   ItineraryItem,
-  "id" | "images" | "shorePower"
+  "id" | "images" | "stopType" | "adminNotes"
 >[] = [
   {
     title: "Paros: pick up the boat",

@@ -1,4 +1,8 @@
-import { type CostItem, type ItineraryItem } from "@/data/itinerary";
+import {
+  isStopType,
+  type CostItem,
+  type ItineraryItem,
+} from "@/data/itinerary";
 import { ITINERARY_SEED } from "@/data/itinerary-seed";
 import { db } from "@/lib/db";
 
@@ -73,14 +77,20 @@ function toIso(value: unknown): string {
   return new Date(value as string | Date).toISOString();
 }
 
-/** The whole itinerary, in order, with each item's costs and photos. */
-export async function getItinerary(): Promise<ItineraryItem[]> {
+/**
+ * The whole itinerary, in order, with each item's costs and photos. Admin
+ * notes are included only when `includeAdminNotes` is true: pass it only for
+ * admin sessions, since the result is sent to the browser.
+ */
+export async function getItinerary({
+  includeAdminNotes = false,
+}: { includeAdminNotes?: boolean } = {}): Promise<ItineraryItem[]> {
   await ensureSeeded();
   const sql = await db();
   const rows = await sql`
     SELECT
       i.id, i.title, i.start_at, i.end_at, i.description, i.lat, i.lng,
-      i.google_maps_url, i.shore_power,
+      i.google_maps_url, i.stop_type, i.admin_notes,
       COALESCE(
         (
           SELECT json_agg(
@@ -125,14 +135,17 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
       perPerson: c.perPerson === true,
     })),
     images: row.images as string[],
-    shorePower: row.shore_power === true,
+    stopType: isStopType(row.stop_type) ? row.stop_type : "docked",
+    ...(includeAdminNotes ? { adminNotes: row.admin_notes as string } : {}),
   }));
 }
 
 /** Like getItinerary, but logs and returns null on failure, for pages to show an error. */
-export async function loadItinerary(): Promise<ItineraryItem[] | null> {
+export async function loadItinerary(
+  options: { includeAdminNotes?: boolean } = {},
+): Promise<ItineraryItem[] | null> {
   try {
-    return await getItinerary();
+    return await getItinerary(options);
   } catch (error) {
     console.error("getItinerary failed", error);
     return null;
