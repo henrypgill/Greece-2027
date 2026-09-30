@@ -37,10 +37,10 @@ import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import EditIcon from "@mui/icons-material/Edit";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import PowerIcon from "@mui/icons-material/Power";
 import StopDetails from "@/components/StopDetails";
 import {
   EMPTY_STOP,
+  STOP_TYPES,
   getLegs,
   toStopFormValues,
   type ItineraryItem,
@@ -268,23 +268,19 @@ function RowContent({
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
           {handle}
           <Avatar
+            // Coloured by stop type, like the map pins.
+            title={STOP_TYPES[item.stopType].label}
             sx={{
               width: 28,
               height: 28,
               fontSize: 14,
-              bgcolor: "primary.main",
+              bgcolor: STOP_TYPES[item.stopType].color,
+              color: STOP_TYPES[item.stopType].textColor,
             }}
           >
             {number}
           </Avatar>
           <Typography sx={{ fontWeight: 500 }}>{item.title}</Typography>
-          {item.shorePower && (
-            <PowerIcon
-              fontSize="small"
-              color="action"
-              titleAccess="Will have shore power"
-            />
-          )}
         </Stack>
       </AccordionSummary>
 

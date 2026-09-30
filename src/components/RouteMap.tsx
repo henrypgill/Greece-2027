@@ -5,32 +5,34 @@ import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import StopPopup from "@/components/StopPopup";
+import StopTypeDot from "@/components/StopTypeDot";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
+  STOP_TYPE_KEYS,
+  STOP_TYPES,
   formatDuration,
   getLegs,
   type GeoLocation,
   type ItineraryItem,
+  type StopType,
 } from "@/data/itinerary";
 import theme from "@/theme";
 
 const PIN_SIZE = 28;
 const ROUTE_COLOR = theme.palette.primary.main;
-/** Pins for stops where we'll have shore power. */
-const SHORE_POWER_COLOR = theme.palette.success.main;
 
 const toLngLat = ({ lng, lat }: GeoLocation): [number, number] => [lng, lat];
 
-/** A round, numbered map pin; green where we'll have shore power. */
-function createPinElement(number: number, shorePower: boolean): HTMLDivElement {
+/** A round, numbered map pin in its stop type's colour. */
+function createPinElement(number: number, type: StopType): HTMLDivElement {
   const el = document.createElement("div");
   el.textContent = String(number);
   Object.assign(el.style, {
     width: `${PIN_SIZE}px`,
     height: `${PIN_SIZE}px`,
     borderRadius: "50%",
-    background: shorePower ? SHORE_POWER_COLOR : ROUTE_COLOR,
-    color: "#fff",
+    background: STOP_TYPES[type].color,
+    color: STOP_TYPES[type].textColor,
     border: "2px solid #fff",
     boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
     display: "flex",
@@ -117,7 +119,7 @@ export default function RouteMap({
           .map((item, index) => ({ item, index }))
           .reverse()
           .forEach(({ item, index }) => {
-            const pin = createPinElement(index + 1, item.shorePower);
+            const pin = createPinElement(index + 1, item.stopType);
             pin.setAttribute("role", "button");
             pin.setAttribute("aria-label", `${index + 1}. ${item.title}`);
             pin.addEventListener("click", () => setSelected(index));
@@ -212,15 +214,13 @@ export default function RouteMap({
         </Box>
       )}
 
-      {itinerary.some((item) => item.shorePower) && !failed && (
+      {/* Key to the pin colours: just the types used on this trip. */}
+      {!failed && (
         <Box
           sx={{
             position: "absolute",
             left: 8,
             bottom: 32,
-            display: "flex",
-            alignItems: "center",
-            gap: 0.75,
             px: 1,
             py: 0.5,
             borderRadius: 1,
@@ -229,16 +229,17 @@ export default function RouteMap({
             pointerEvents: "none",
           }}
         >
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              bgcolor: "success.main",
-              border: "1px solid #fff",
-            }}
-          />
-          <Typography variant="caption">Shore power</Typography>
+          {STOP_TYPE_KEYS.filter((key) =>
+            itinerary.some((item) => item.stopType === key),
+          ).map((key) => (
+            <Box
+              key={key}
+              sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
+            >
+              <StopTypeDot type={key} size={10} />
+              <Typography variant="caption">{STOP_TYPES[key].label}</Typography>
+            </Box>
+          ))}
         </Box>
       )}
 
