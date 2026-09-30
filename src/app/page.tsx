@@ -8,12 +8,11 @@ import Typography from "@mui/material/Typography";
 import TripCalendar from "@/components/TripCalendar";
 import TripWeather from "@/components/TripWeather";
 import {
+  costPerPerson,
   formatCost,
   formatDay,
   greekDayKey,
-  itemTotalCost,
 } from "@/data/itinerary";
-import { costPerPerson } from "@/data/trip-costs";
 import { loadItinerary } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
 import { loadPeopleCount, loadTripDescription } from "@/lib/settings-db";
@@ -46,8 +45,7 @@ export default async function HomePage() {
   }
 
   const perPerson = costPerPerson(
-    tripCosts,
-    itinerary.reduce((sum, item) => sum + itemTotalCost(item), 0),
+    [...tripCosts, ...itinerary.flatMap((item) => item.costs)],
     peopleCount,
   );
 

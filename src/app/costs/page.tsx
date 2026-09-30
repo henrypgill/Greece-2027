@@ -9,27 +9,40 @@ import Typography from "@mui/material/Typography";
 import { connection } from "next/server";
 import Alert from "@mui/material/Alert";
 import {
+  costForGroup,
+  costPerPerson,
+  costShareLabel,
   formatCost,
   formatDay,
   groupByDay,
-  itemTotalCost,
-  sumCosts,
   type CostItem,
 } from "@/data/itinerary";
 import { loadItinerary } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
 import { loadPeopleCount } from "@/lib/settings-db";
 import { loadTripCosts } from "@/lib/trip-costs-db";
-import { costPerPerson } from "@/data/trip-costs";
 import TripCosts from "./TripCosts";
 import TripTotal from "./TripTotal";
 
-function CostRows({ costs }: { costs: CostItem[] }) {
+function CostRows({
+  costs,
+  peopleCount,
+}: {
+  costs: CostItem[];
+  peopleCount: number;
+}) {
   return costs.map((cost, i) => (
     <TableRow key={i}>
       <TableCell sx={{ pl: 0 }}>{cost.item}</TableCell>
       <TableCell align="right" sx={{ pr: 0 }}>
         {formatCost(cost.cost)}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block" }}
+        >
+          {costShareLabel(cost, peopleCount)}
+        </Typography>
       </TableCell>
     </TableRow>
   ));
@@ -61,16 +74,13 @@ export default async function CostsPage() {
       </Alert>
     );
   }
-  const itineraryTotal = itinerary.reduce(
-    (sum, item) => sum + itemTotalCost(item),
-    0,
-  );
+  const allCosts = [...tripCosts, ...itinerary.flatMap((item) => item.costs)];
   const days = groupByDay(itinerary);
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
       <TripTotal
-        perPerson={costPerPerson(tripCosts, itineraryTotal, peopleCount)}
+        perPerson={costPerPerson(allCosts, peopleCount)}
         peopleCount={peopleCount}
         isAdmin={isAdmin}
       />
@@ -107,10 +117,10 @@ export default async function CostsPage() {
                 {dayCosts.length > 0 ? (
                   <Table size="small">
                     <TableBody>
-                      <CostRows costs={dayCosts} />
+                      <CostRows costs={dayCosts} peopleCount={peopleCount} />
                       <SubtotalRow
-                        label="Day total"
-                        amount={sumCosts(dayCosts)}
+                        label="Day total for everyone"
+                        amount={costForGroup(dayCosts, peopleCount)}
                       />
                     </TableBody>
                   </Table>
