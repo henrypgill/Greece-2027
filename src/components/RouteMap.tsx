@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import StopPopup from "@/components/StopPopup";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   formatDuration,
@@ -68,6 +69,11 @@ export default function RouteMap({
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
+  // Index of the stop whose details are open, from tapping its pin.
+  const [selected, setSelected] = useState<number | null>(null);
+  // The popup covers the page area (like the menu drawer, it stays inside
+  // the phone-width column rather than the whole browser window).
+  const [frame, setFrame] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,13 +115,12 @@ export default function RouteMap({
           .map((item, index) => ({ item, index }))
           .reverse()
           .forEach(({ item, index }) => {
-            new mapboxgl.Marker({ element: createPinElement(index + 1) })
+            const pin = createPinElement(index + 1);
+            pin.setAttribute("role", "button");
+            pin.setAttribute("aria-label", `${index + 1}. ${item.title}`);
+            pin.addEventListener("click", () => setSelected(index));
+            new mapboxgl.Marker({ element: pin })
               .setLngLat(toLngLat(item.location))
-              .setPopup(
-                new mapboxgl.Popup({ offset: PIN_SIZE / 2 + 4 }).setText(
-                  `${index + 1}. ${item.title}`,
-                ),
-              )
               .addTo(mapInstance);
           });
 
@@ -184,7 +189,7 @@ export default function RouteMap({
   }, [router, itinerary]);
 
   return (
-    <>
+    <Box ref={setFrame} sx={{ position: "absolute", inset: 0 }}>
       <Box ref={containerRef} sx={{ position: "absolute", inset: 0 }} />
       {failed && (
         <Box
@@ -204,6 +209,13 @@ export default function RouteMap({
           </Typography>
         </Box>
       )}
-    </>
+
+      <StopPopup
+        itinerary={itinerary}
+        index={selected}
+        onClose={() => setSelected(null)}
+        container={frame}
+      />
+    </Box>
   );
 }
