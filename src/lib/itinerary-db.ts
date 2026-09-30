@@ -84,7 +84,9 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
       COALESCE(
         (
           SELECT json_agg(
-            json_build_object('item', c.item, 'cost', c.cost)
+            json_build_object(
+              'item', c.item, 'cost', c.cost, 'perPerson', c.per_person
+            )
             ORDER BY c.sort_order, c.id
           )
           FROM itinerary_costs c WHERE c.item_id = i.id
@@ -111,9 +113,17 @@ export async function getItinerary(): Promise<ItineraryItem[]> {
     ...(row.google_maps_url
       ? { googleMapsUrl: row.google_maps_url as string }
       : {}),
-    costs: (row.costs as { item: string; cost: string | number }[]).map(
-      (c): CostItem => ({ item: c.item, cost: Number(c.cost) }),
-    ),
+    costs: (
+      row.costs as {
+        item: string;
+        cost: string | number;
+        perPerson: boolean;
+      }[]
+    ).map((c): CostItem => ({
+      item: c.item,
+      cost: Number(c.cost),
+      perPerson: c.perPerson === true,
+    })),
     images: row.images as string[],
     shorePower: row.shore_power === true,
   }));

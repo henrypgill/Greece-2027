@@ -20,6 +20,11 @@ export type CostItem = {
   item: string;
   /** Amount in pounds (see `CURRENCY`). */
   cost: number;
+  /**
+   * true: `cost` is what each person pays (e.g. flights). false: it's the
+   * amount for the whole group, split between everyone (e.g. the charter).
+   */
+  perPerson: boolean;
 };
 
 export type ItineraryItem = {
@@ -74,12 +79,30 @@ export function getLegs(items: ItineraryItem[]): Leg[] {
   });
 }
 
-export function sumCosts(costs: CostItem[]): number {
-  return costs.reduce((sum, c) => sum + c.cost, 0);
+/**
+ * What each person pays for these costs: per-person ones as they are, plus
+ * an equal share of the shared ones.
+ */
+export function costPerPerson(costs: CostItem[], peopleCount: number): number {
+  return costs.reduce(
+    (sum, c) => sum + (c.perPerson ? c.cost : c.cost / peopleCount),
+    0,
+  );
 }
 
-export function itemTotalCost(item: ItineraryItem): number {
-  return sumCosts(item.costs);
+/** What these costs come to for the whole group. */
+export function costForGroup(costs: CostItem[], peopleCount: number): number {
+  return costs.reduce(
+    (sum, c) => sum + (c.perPerson ? c.cost * peopleCount : c.cost),
+    0,
+  );
+}
+
+/** e.g. "per person" or "shared · £120.00 each", shown under an amount. */
+export function costShareLabel(cost: CostItem, peopleCount: number): string {
+  return cost.perPerson
+    ? "per person"
+    : `shared · ${formatCost(cost.cost / peopleCount)} each`;
 }
 
 export type ItineraryDay = {
@@ -175,7 +198,7 @@ export type StopFormValues = {
   lat: string;
   lng: string;
   googleMapsUrl: string;
-  costs: { item: string; cost: string }[];
+  costs: { item: string; cost: string; perPerson: boolean }[];
   images: string[];
   shorePower: boolean;
 };
@@ -222,7 +245,11 @@ export function toStopFormValues(item: ItineraryItem): StopFormValues {
     lat: String(item.location.lat),
     lng: String(item.location.lng),
     googleMapsUrl: item.googleMapsUrl ?? "",
-    costs: item.costs.map((c) => ({ item: c.item, cost: String(c.cost) })),
+    costs: item.costs.map((c) => ({
+      item: c.item,
+      cost: String(c.cost),
+      perPerson: c.perPerson,
+    })),
     images: item.images,
     shorePower: item.shorePower,
   };
