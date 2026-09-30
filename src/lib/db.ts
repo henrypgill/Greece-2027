@@ -119,6 +119,11 @@ export async function db(): Promise<NeonQueryFunction<false, false>> {
       ALTER TABLE trip_costs
       ADD COLUMN IF NOT EXISTS per_person boolean NOT NULL DEFAULT false
     `;
+    // Optional notes about an overall cost. Added after the table existed.
+    await sql`
+      ALTER TABLE trip_costs
+      ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT ''
+    `;
     // The "Things to bring" list (see bring-db.ts).
     await sql`
       CREATE TABLE IF NOT EXISTS bring_items (
