@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto } from "next/font/google";
+import { Poppins } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -7,11 +7,11 @@ import GlobalStyles from "@mui/material/GlobalStyles";
 import AppShell from "@/components/AppShell";
 import theme from "@/theme";
 
-const roboto = Roboto({
-  weight: ["300", "400", "500", "700"],
+const poppins = Poppins({
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-roboto",
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={roboto.variable}>
+    <html lang="en" className={poppins.variable}>
       <body>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
