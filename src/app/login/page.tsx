@@ -64,43 +64,58 @@ export default function LoginPage() {
     }
   }
 
+  // Phones: the form fills the phone-width column. Desktop: a card centred
+  // on the page.
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
-        display: "flex",
-        flexDirection: "column",
+        display: { md: "flex" },
+        alignItems: "center",
         justifyContent: "center",
-        gap: 2,
         minHeight: "100dvh",
-        maxWidth: 430,
-        mx: "auto",
-        p: 3,
-        bgcolor: "background.default",
+        bgcolor: { md: "background.default" },
       }}
     >
-      <Typography variant="h4" component="h1">
-        Greece 2027
-      </Typography>
-      <TextField
-        label="Password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        autoFocus
-        autoComplete="current-password"
-        fullWidth
-      />
-      {error && <Alert severity="error">{error}</Alert>}
-      <Button
-        type="submit"
-        variant="contained"
-        size="large"
-        disabled={loading || !password}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 2,
+          minHeight: { xs: "100dvh", md: 0 },
+          width: { md: "100%" },
+          maxWidth: { xs: 430, md: 400 },
+          mx: "auto",
+          p: { xs: 3, md: 5 },
+          bgcolor: { xs: "background.default", md: "background.paper" },
+          borderRadius: { md: "24px" },
+          boxShadow: { md: 4 },
+        }}
       >
-        Enter
-      </Button>
+        <Typography variant="h4" component="h1">
+          Greece 2027
+        </Typography>
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoFocus
+          autoComplete="current-password"
+          fullWidth
+        />
+        {error && <Alert severity="error">{error}</Alert>}
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          disabled={loading || !password}
+        >
+          Enter
+        </Button>
+      </Box>
     </Box>
   );
 }

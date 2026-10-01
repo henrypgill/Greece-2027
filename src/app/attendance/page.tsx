@@ -2,7 +2,6 @@ import { connection } from "next/server";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
-import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { isAdminSession } from "@/lib/session";
 import AttendeeList from "./AttendeeList";
@@ -21,7 +20,18 @@ export default async function AttendancePage() {
   }
 
   return (
-    <Stack spacing={3} sx={{ p: 2 }}>
+    // Phones: one column. Desktop: the form on the left, the list on the right.
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+        gap: { xs: 3, md: 6 },
+        alignItems: "start",
+        maxWidth: 1000,
+        mx: "auto",
+        p: { xs: 2, md: 4 },
+      }}
+    >
       <Box>
         <Typography variant="h6" component="h2" gutterBottom>
           Are you coming?
@@ -29,7 +39,7 @@ export default async function AttendancePage() {
         <AttendForm />
       </Box>
 
-      <Divider />
+      <Divider sx={{ display: { md: "none" } }} />
 
       <Box>
         <Typography variant="h6" component="h2">
@@ -47,6 +57,6 @@ export default async function AttendancePage() {
           <AttendeeList attendees={attendees} isAdmin={isAdmin} />
         )}
       </Box>
-    </Stack>
+    </Box>
   );
 }

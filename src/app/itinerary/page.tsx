@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import { loadItinerary } from "@/lib/itinerary-db";
 import { isAdminSession } from "@/lib/session";
 import ItineraryList from "./ItineraryList";
@@ -16,5 +17,10 @@ export default async function ItineraryPage() {
       </Alert>
     );
   }
-  return <ItineraryList itinerary={itinerary} isAdmin={isAdmin} />;
+  // A single readable column, centred on desktop.
+  return (
+    <Box sx={{ maxWidth: 820, mx: "auto", py: { md: 2 } }}>
+      <ItineraryList itinerary={itinerary} isAdmin={isAdmin} />
+    </Box>
+  );
 }

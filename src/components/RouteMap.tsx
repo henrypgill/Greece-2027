@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import RouteSidePanel from "@/components/RouteSidePanel";
 import StopPopup from "@/components/StopPopup";
 import StopTypeDot from "@/components/StopTypeDot";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -20,6 +22,8 @@ import theme from "@/theme";
 
 const PIN_SIZE = 28;
 const ROUTE_COLOR = theme.palette.primary.main;
+// Zoom in at least this far when moving to a stop picked in the side panel.
+const STOP_ZOOM = 10;
 
 const toLngLat = ({ lng, lat }: GeoLocation): [number, number] => [lng, lat];
 
@@ -71,7 +75,14 @@ export default function RouteMap({
   itinerary: ItineraryItem[];
 }) {
   const router = useRouter();
+  // Desktop shows stop details in a panel beside the map; phones get a
+  // full-screen popup. False on the server and first render, so the page
+  // starts as the phone layout and switches once mounted.
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<import("mapbox-gl").Map | null>(null);
+  // Pin elements by itinerary index, to highlight the selected one.
+  const pinsRef = useRef<HTMLDivElement[]>([]);
   const [failed, setFailed] = useState(false);
   // Index of the stop whose details are open, from tapping its pin.
   const [selected, setSelected] = useState<number | null>(null);
@@ -111,6 +122,8 @@ export default function RouteMap({
           fitBoundsOptions: { padding: 60 },
         });
         map = mapInstance;
+        mapRef.current = mapInstance;
+        pinsRef.current = [];
 
         // Later markers draw on top of earlier ones, so add them last-first:
         // where pins overlap (e.g. a trip ending where it started), the
@@ -123,6 +136,7 @@ export default function RouteMap({
             pin.setAttribute("role", "button");
             pin.setAttribute("aria-label", `${index + 1}. ${item.title}`);
             pin.addEventListener("click", () => setSelected(index));
+            pinsRef.current[index] = pin;
             new mapboxgl.Marker({ element: pin })
               .setLngLat(toLngLat(item.location))
               .addTo(mapInstance);
@@ -186,66 +200,113 @@ export default function RouteMap({
 
     init();
 
+    // Keep the map filling its box when the box changes size (the window
+    // resizing, or switching between the phone and desktop layouts).
+    const resizeObserver = new ResizeObserver(() => map?.resize());
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
+
     return () => {
       cancelled = true;
+      resizeObserver.disconnect();
       map?.remove();
+      mapRef.current = null;
     };
   }, [router, itinerary]);
 
+  // Ring the selected stop's pin and bring it to the front. (Not a scale
+  // transform: Mapbox positions markers with the element's transform.)
+  useEffect(() => {
+    pinsRef.current.forEach((pin, index) => {
+      const isSelected = index === selected;
+      pin.style.boxShadow = isSelected
+        ? `0 0 0 3px ${ROUTE_COLOR}, 0 1px 6px rgba(0,0,0,0.5)`
+        : "0 1px 4px rgba(0,0,0,0.4)";
+      pin.style.zIndex = isSelected ? "1" : "";
+    });
+  }, [selected]);
+
+  /** Select a stop from the side panel, moving the map to it. */
+  function selectFromPanel(index: number | null) {
+    setSelected(index);
+    const map = mapRef.current;
+    if (index === null || !map) return;
+    map.easeTo({
+      center: toLngLat(itinerary[index].location),
+      zoom: Math.max(map.getZoom(), STOP_ZOOM),
+      duration: 800,
+    });
+  }
+
   return (
-    <Box ref={setFrame} sx={{ position: "absolute", inset: 0 }}>
-      <Box ref={containerRef} sx={{ position: "absolute", inset: 0 }} />
-      {failed && (
-        <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            p: 3,
-            textAlign: "center",
-          }}
-        >
-          <Typography color="text.secondary">
-            The map couldn&apos;t be loaded. Check the Mapbox token and try
-            again.
-          </Typography>
-        </Box>
+    <Box
+      ref={setFrame}
+      sx={{ position: "absolute", inset: 0, display: "flex" }}
+    >
+      <Box sx={{ position: "relative", flex: 1, minWidth: 0 }}>
+        <Box ref={containerRef} sx={{ position: "absolute", inset: 0 }} />
+        {failed && (
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: 3,
+              textAlign: "center",
+            }}
+          >
+            <Typography color="text.secondary">
+              The map couldn&apos;t be loaded. Check the Mapbox token and try
+              again.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Key to the pin colours: just the types used on this trip. */}
+        {!failed && (
+          <Box
+            sx={{
+              position: "absolute",
+              left: 8,
+              bottom: 32,
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              bgcolor: "rgba(255,255,255,0.9)",
+              boxShadow: 1,
+              pointerEvents: "none",
+            }}
+          >
+            {STOP_TYPE_KEYS.filter((key) =>
+              itinerary.some((item) => item.stopType === key),
+            ).map((key) => (
+              <Box
+                key={key}
+                sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
+              >
+                <StopTypeDot type={key} size={10} />
+                <Typography variant="caption">
+                  {STOP_TYPES[key].label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {isDesktop && (
+        <RouteSidePanel
+          itinerary={itinerary}
+          selected={selected}
+          onSelect={selectFromPanel}
+        />
       )}
 
-      {/* Key to the pin colours: just the types used on this trip. */}
-      {!failed && (
-        <Box
-          sx={{
-            position: "absolute",
-            left: 8,
-            bottom: 32,
-            px: 1,
-            py: 0.5,
-            borderRadius: 1,
-            bgcolor: "rgba(255,255,255,0.9)",
-            boxShadow: 1,
-            pointerEvents: "none",
-          }}
-        >
-          {STOP_TYPE_KEYS.filter((key) =>
-            itinerary.some((item) => item.stopType === key),
-          ).map((key) => (
-            <Box
-              key={key}
-              sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
-            >
-              <StopTypeDot type={key} size={10} />
-              <Typography variant="caption">{STOP_TYPES[key].label}</Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-
+      {/* Phones only; on desktop the side panel shows the stop instead. */}
       <StopPopup
         itinerary={itinerary}
-        index={selected}
+        index={isDesktop ? null : selected}
         onClose={() => setSelected(null)}
         container={frame}
       />

@@ -49,34 +49,48 @@ export default async function HomePage() {
     peopleCount,
   );
 
+  // Phones: one column, sections divided by rules. Desktop: the description
+  // on the left, the trip facts in a column on the right.
   return (
-    <Stack spacing={3} sx={{ p: 2 }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 3fr) minmax(0, 2fr)" },
+        gap: { xs: 3, md: 6 },
+        alignItems: "start",
+        maxWidth: 1200,
+        mx: "auto",
+        p: { xs: 2, md: 4 },
+      }}
+    >
       <TripDescription description={description} isAdmin={isAdmin} />
 
-      <Divider />
+      <Divider sx={{ display: { md: "none" } }} />
 
-      <Box>
-        <Typography variant="overline" color="text.secondary">
-          Cost per person
-        </Typography>
-        <Typography variant="h5" component="p">
-          {formatCost(perPerson)}
-        </Typography>
-        {/* A plain link: this is a server component, so it can't pass
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="overline" color="text.secondary">
+            Cost per person
+          </Typography>
+          <Typography variant="h5" component="p">
+            {formatCost(perPerson)}
+          </Typography>
+          {/* A plain link: this is a server component, so it can't pass
             next/link to MUI's (client) Button as its component. */}
-        <Button href="/costs" size="small" sx={{ ml: -0.5, mt: 0.5 }}>
-          See the breakdown
-        </Button>
-      </Box>
+          <Button href="/costs" size="small" sx={{ ml: -0.5, mt: 0.5 }}>
+            See the breakdown
+          </Button>
+        </Box>
 
-      <Divider />
+        <Divider />
 
-      <TripDates itinerary={itinerary} />
+        <TripDates itinerary={itinerary} />
 
-      <Divider />
+        <Divider />
 
-      <TripWeather />
-    </Stack>
+        <TripWeather />
+      </Stack>
+    </Box>
   );
 }
 

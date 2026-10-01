@@ -77,25 +77,39 @@ export default async function CostsPage() {
   const allCosts = [...tripCosts, ...itinerary.flatMap((item) => item.costs)];
   const days = groupByDay(itinerary);
 
+  // Phones: one column. Desktop: the totals and overall costs on the left,
+  // day by day on the right.
   return (
-    <Stack spacing={3} sx={{ p: 2 }}>
-      <TripTotal
-        perPerson={costPerPerson(allCosts, peopleCount)}
-        peopleCount={peopleCount}
-        isAdmin={isAdmin}
-      />
-
-      <Divider />
-
-      <Box>
-        <TripCosts
-          costs={tripCosts}
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+        gap: { xs: 3, md: 6 },
+        alignItems: "start",
+        maxWidth: 1200,
+        mx: "auto",
+        p: { xs: 2, md: 4 },
+      }}
+    >
+      <Stack spacing={3}>
+        <TripTotal
+          perPerson={costPerPerson(allCosts, peopleCount)}
           peopleCount={peopleCount}
           isAdmin={isAdmin}
         />
-      </Box>
 
-      <Divider />
+        <Divider />
+
+        <Box>
+          <TripCosts
+            costs={tripCosts}
+            peopleCount={peopleCount}
+            isAdmin={isAdmin}
+          />
+        </Box>
+      </Stack>
+
+      <Divider sx={{ display: { md: "none" } }} />
 
       <Box>
         <Typography variant="h6" component="h2">
@@ -134,6 +148,6 @@ export default async function CostsPage() {
           })}
         </Stack>
       </Box>
-    </Stack>
+    </Box>
   );
 }

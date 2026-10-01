@@ -24,7 +24,10 @@ import LuggageIcon from "@mui/icons-material/Luggage";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 // Upper bound of common single-screen phone widths (e.g. iPhone Pro Max).
+// Below the `md` breakpoint (900px) the app is this phone-width column;
+// from `md` up it's the desktop layout: full width with a permanent side nav.
 const MAX_WIDTH = 430;
+const NAV_WIDTH = 240;
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: <HomeIcon /> },
@@ -66,6 +69,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // The login page is shown on its own, without the top bar and menu.
   if (pathname === "/login") return <>{children}</>;
 
+  // The nav and "Log out", shared by the phone menu drawer and the desktop
+  // side nav.
+  const navLists = (
+    <>
+      <List component="nav" aria-label="Main navigation">
+        {NAV_ITEMS.map((item) => (
+          <ListItemButton
+            key={item.href}
+            component={Link}
+            href={item.href}
+            selected={isActive(item.href)}
+            onClick={() => setOpen(false)}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.label} />
+          </ListItemButton>
+        ))}
+      </List>
+      <Divider />
+      <List>
+        <ListItemButton onClick={logOut}>
+          <ListItemIcon>
+            <LogoutIcon />
+          </ListItemIcon>
+          <ListItemText primary="Log out" />
+        </ListItemButton>
+      </List>
+    </>
+  );
+
   return (
     <Box
       ref={setShell}
@@ -74,7 +107,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         display: "flex",
         flexDirection: "column",
         height: "100dvh",
-        maxWidth: MAX_WIDTH,
+        maxWidth: { xs: MAX_WIDTH, md: "none" },
         mx: "auto",
         overflow: "hidden",
         bgcolor: "background.default",
@@ -82,16 +115,39 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     >
       <AppBar position="static" sx={{ flexShrink: 0 }}>
         <Toolbar>
+          {/* Phones only: the desktop layout has a permanent side nav. */}
           <IconButton
             color="inherit"
             edge="start"
             aria-label="Open navigation menu"
             onClick={() => setOpen(true)}
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, display: { md: "none" } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="h1" noWrap>
+          {/* Desktop: the app name above the side nav, then the page title
+              lined up with the content. */}
+          <Typography
+            variant="h6"
+            component="p"
+            noWrap
+            sx={{
+              display: { xs: "none", md: "block" },
+              width: NAV_WIDTH - 24, // less the toolbar's left padding
+              flexShrink: 0,
+            }}
+          >
+            Greece 2027
+          </Typography>
+          <Typography
+            variant="h6"
+            component="h1"
+            noWrap
+            sx={{
+              display: { md: pathname === "/" ? "none" : "block" },
+              fontWeight: { md: 500 },
+            }}
+          >
             {title}
           </Typography>
         </Toolbar>
@@ -113,36 +169,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             Greece 2027
           </Typography>
         </Toolbar>
-        <List component="nav" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => (
-            <ListItemButton
-              key={item.href}
-              component={Link}
-              href={item.href}
-              selected={isActive(item.href)}
-              onClick={() => setOpen(false)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          ))}
-        </List>
-        <Divider />
-        <List>
-          <ListItemButton onClick={logOut}>
-            <ListItemIcon>
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText primary="Log out" />
-          </ListItemButton>
-        </List>
+        {navLists}
       </Drawer>
 
-      <Box
-        component="main"
-        sx={{ position: "relative", flex: 1, overflowY: "auto" }}
-      >
-        {children}
+      <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
+        {/* Desktop only: the nav, always visible down the left. */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "block" },
+            width: NAV_WIDTH,
+            flexShrink: 0,
+            overflowY: "auto",
+            py: 1,
+            borderRight: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
+          {navLists}
+        </Box>
+
+        <Box
+          component="main"
+          sx={{ position: "relative", flex: 1, minWidth: 0, overflowY: "auto" }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );
